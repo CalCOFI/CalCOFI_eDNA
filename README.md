@@ -39,7 +39,7 @@ Included on this page is
 
   **/CalCOFI_Database_194903-201907_csv_30Apr2020**
 
-    1. Directory includes metadata files
+    1. Directory includes metadata files **Note** *Bottle data file needed for metadata is not uploaded due to size*
 
   **/**
 
