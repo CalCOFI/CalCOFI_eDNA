@@ -26,7 +26,7 @@ Included on this page is
       5. *Run_Mifish_Joint_Model.R* This script runs the joint STAN model
       6. *Mifish_Joint_Model.stan* This is the STAN model.
 
-    **/decon**
+  **/decon**
 
       1. *20210927_Calcofi_decontam_zjg.R* This script processes the "raw" *Anacapa Toolkit* output and runs decontamination to remove poorly sequenced samples and contaminant ASVs
       2. *20210927_Merge_data.Rmd* This script formats the output from decontamination and sums ASVs by taxonomy.
@@ -38,10 +38,11 @@ Included on this page is
     2. *fishcard_q30* *Anacapa Toolkit* Output of MiFish 12S data using the *CRUX* Local Reference database from Gold et al. 2021. [See GitHub](https://github.com/zjgold/FishCARD) & [See Dryad](https://doi.org/10.5068/D1H963)
 
   **/CalCOFI_Database_194903-201907_csv_30Apr2020**
+
     1. Directory includes metadata files
 
   **/**
-  
+
     1. *larval_counts_20210305.csv* Microscopy derived morphological data
     2. *mifish_library_prep.csv* Relevant sequence library preparation information needed for the joint model.
     3. *20210622_species_mapping_file.csv* Species mapping file that links taxonomy obtained from morphological and molecular data.
