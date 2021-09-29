@@ -2,14 +2,14 @@
 
 Zachary Gold <sup>1 , 2</sup> , Ryan P. Kelly <sup>3</sup>, Andrew Olaf Shelton <sup>2</sup>, Andrew Thompson <sup>4</sup>, Kelly D. Goodwin <sup>5</sup>, Ramon Gallego <sup>2</sup>, Kim Parsons <sup>2</sup>, Luke R. Thompson <sup>5 , 6</sup>,  Dovi Kacev <sup>7</sup>, Paul H. Barber <sup>8</sup>
 
-<sup>1</sup> Cooperative Institute for Climate, Ocean, & Ecosystem Studies, UW, Seattle, WA
-<sup>2</sup> Northwest Fisheries Science Center, NMFS/NOAA, Seattle, WA
-<sup>3</sup> School of Marine and Environmental Affairs, UW, Seattle, WA
-<sup>4</sup> Southwest Fisheries Science Center, NMFS/NOAA, La Jolla, CA
-<sup>5</sup> Ocean Chemistry and Ecosystems Division, Atlantic Oceanographic and Meteorological Laboratory, Miami, FL
-<sup>6</sup> Northern Gulf Institute, Mississippi State University, Mississippi State, MS
-<sup>7</sup> Scripps Institution of Oceanography, UCSD, La Jolla
-<sup>8</sup> Department of Ecology and Evolutionary Biology, UCLA, Los Angeles, CA
+<sup>1</sup> Cooperative Institute for Climate, Ocean, & Ecosystem Studies, UW, Seattle, WA <br />
+<sup>2</sup> Northwest Fisheries Science Center, NMFS/NOAA, Seattle, WA <br />
+<sup>3</sup> School of Marine and Environmental Affairs, UW, Seattle, WA <br />
+<sup>4</sup> Southwest Fisheries Science Center, NMFS/NOAA, La Jolla, CA <br />
+<sup>5</sup> Ocean Chemistry and Ecosystems Division, Atlantic Oceanographic and Meteorological Laboratory, Miami, FL <br />
+<sup>6</sup> Northern Gulf Institute, Mississippi State University, Mississippi State, MS <br />
+<sup>7</sup> Scripps Institution of Oceanography, UCSD, La Jolla <br />
+<sup>8</sup> Department of Ecology and Evolutionary Biology, UCLA, Los Angeles, CA <br />
 
 ## Description
 This page is dedicated to hosting data and code generated for the manuscript.
