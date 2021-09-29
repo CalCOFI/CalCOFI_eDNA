@@ -3,7 +3,7 @@
 Data and code needed to conduct analysis for
 
 
-Zachary Gold<sup>1,2<sup>, Ryan P. Kelly<sup>3<sup>, Andrew Olaf Shelton<sup>2<sup>, Andrew Thompson<sup>4<sup>, Kelly D. Goodwin<sup>5<sup>, Ramon Gallego<sup>2<sup>, Kim Parsons<sup>2<sup>, Luke R. Thompson<sup>5,6<sup>,  Dovi Kacev<sup>7<sup>, Paul H. Barber<sup>8<sup>
+Zachary Gold <sup>1 , 2<sup> , Ryan P. Kelly <sup>3<sup>, Andrew Olaf Shelton <sup>2<sup>, Andrew Thompson <sup>4<sup>, Kelly D. Goodwin <sup>5<sup>, Ramon Gallego <sup>2<sup>, Kim Parsons <sup>2<sup>, Luke R. Thompson <sup>5 , 6<sup>,  Dovi Kacev <sup>7<sup>, Paul H. Barber <sup>8<sup>
 
 <sup>1<sup> Cooperative Institute for Climate, Ocean, & Ecosystem Studies, UW, Seattle, WA
 
