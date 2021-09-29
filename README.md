@@ -106,6 +106,8 @@ Included on this page is
     44. fitdistrplus
     45. broom
     46. analyze.stuff
+    47. ggallin
+    48. patchwork
 
 
 *See individual packages for installation*
