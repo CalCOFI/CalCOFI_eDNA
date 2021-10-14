@@ -12,24 +12,11 @@ library(rstan)
 library(lme4)
 library(here)
 
-a <- readRDS(file =here::here("data","eDNA_long_all.RDS")) %>% 
-  mutate(PA_biomass = if_else(Normalized.biomass > 0.01, 1, 0))
-
 mifish <- readRDS(here::here("data", "mifish_tech_nReads.RDS")) %>% 
   filter(!ID_mifish %in% c("MISSING", ""),
          !is.na(mifish_reads)) %>% 
   filter(ext_rep == 1) %>% 
   dplyr::select(Sample, ID_mifish, mifish_reads) %>% 
-  distinct() %>% 
-  mutate(Sample = gsub("X", "", Sample)) %>% 
-  mutate(Year = substr(Sample, 1,4),
-         Year = as.numeric(Year))
-
-seb <- readRDS(here::here("data", "sebastes_tech_nReads.RDS")) %>% 
-  filter(!ID_sebastes %in% c("MISSING", ""),
-         !is.na(sebastes_reads)) %>% 
-  filter(ext_rep == 1) %>% 
-  dplyr::select(Sample, ID_sebastes, sebastes_reads) %>% 
   distinct() %>% 
   mutate(Sample = gsub("X", "", Sample)) %>% 
   mutate(Year = substr(Sample, 1,4),
@@ -94,7 +81,17 @@ foo <- f %>%
   
 foo %>% 
   ggplot(aes(y = log(CV), x = Year)) +
-    geom_point()
+    geom_point() -> s21
+  
+  s21
+  
+  ggsave(
+  s21,
+  file = here::here("analysis", "figures", "S21_fig.png"),
+  width = 12,
+  height = 8
+  )
+
 
 #mixed-effect model, w species as random effect
 lmer(CV ~ 0 + (1 + Year | ID_mifish), data = foo) %>% summary()
@@ -134,7 +131,8 @@ Again, we see no evidence of this effect.
 
 ```{r}
 
-b_grid_tibble <- readRDS(file=here("data","b_grid_tibble.RDS"))
+
+b_grid_tibble <- readRDS(file = here("data", "b_grid_tibble_rpkn.RDS"))
 
 b_master_out <- b_grid_tibble %>%
   mutate(., log_est=log(est+0.01)) %>% 
@@ -145,7 +143,16 @@ b_master_out <- b_grid_tibble %>%
 
 b_master_out %>% 
   ggplot(aes(x = Year, y = log(CV))) +
-    geom_point()
+    geom_point()-> s22
+  
+  s22
+  
+  ggsave(
+  s22,
+  file = here::here("analysis", "figures", "S22_fig.png"),
+  width = 12,
+  height = 8
+  )
 
 #as simple linear model, with all species/sites combined
 lm(CV ~ as.numeric(Year), data = b_master_out) %>% summary
