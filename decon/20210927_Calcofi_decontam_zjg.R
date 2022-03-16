@@ -206,6 +206,11 @@ anacapa_table_1_long$reads <- as.numeric(anacapa_table_1_long$reads)
 #Merge All Tables
 ASV.table_long <- rbind(anacapa_table_1_long)
 
+
+ASV.table_long %>% 
+  dplyr::summarise(sum(reads))
+
+
 #---
 
 #---
@@ -989,3 +994,8 @@ saveRDS(ASV.nested,
         file = here("decon", "Output_R", "ASV.nested_final.RDS"))
 saveRDS(ASV.summary,
         file = here("decon", "Output_R", "ASV.summary_final.RDS"))
+
+ASV.summary <- readRDS(,
+        file = here("decon", "Output_R", "ASV.summary_final.RDS"))
+
+ASV.summary$Summary

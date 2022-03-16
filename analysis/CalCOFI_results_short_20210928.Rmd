@@ -155,10 +155,9 @@ theme(
 panel.background = element_rect(fill = 'white', colour = 'white'),
 panel.grid.major = element_blank(),
 panel.grid.minor = element_blank(),
-axis.text.x = element_blank(),
-axis.ticks.x = element_blank(),
+axis.text.x = element_text(size = 12, angle = 30, hjust = 1),
 axis.text.y = element_text(size = 12, angle = 0),
-axis.title.x = element_blank(),
+axis.title.x =element_text(size = 16,  face = "bold"),
 axis.title.y = element_text(size = 16, angle = 90, face = "bold"),
 strip.background = element_rect(fill = 'grey90'),
 strip.text.x = element_text(size = 15, face = 'italic'),
@@ -174,7 +173,7 @@ temp_plot
 ggsave(
 temp_plot,
 file = here::here("analysis", "figures", "temp_plot.png"),
-width = 12,
+width = 14,
 height = 8
 )  
 
@@ -1465,7 +1464,7 @@ T_mex_binomial_fig
 
 saveRDS(T_mex_binomial_fig, file =here::here("analysis","figures","T_mex_binomial_fig.RDS"))
 
-ggsave(T_mex_binomial_fig, file =here::here("analysis","figures","T_mex_binomial_fig.png"), width = 12, height = 8)
+ggsave(T_mex_binomial_fig, file =here::here("analysis","figures","T_mex_binomial_fig.png"), width = 14, height = 8)
 
 
 ```
@@ -1504,7 +1503,7 @@ garnet_binomial_fig
 
 saveRDS(garnet_binomial_fig, file =here::here("analysis","figures","garnet_binomial_fig.RDS"))
 
-ggsave(garnet_binomial_fig, file =here::here("analysis","figures","garnet_binomial_fig.png"), width = 12, height = 8)
+ggsave(garnet_binomial_fig, file =here::here("analysis","figures","garnet_binomial_fig.png"), width = 14, height = 8)
 
 
 ```
@@ -1563,12 +1562,12 @@ b_master_out_site %>%
 b_long_all_edit %>% 
   mutate(., median_log = log(median+0.1),sd_log = log(sd+0.1),p05_log = log(p05+0.1),p95_log = log(p95+0.1) ) -> b_long_all_edit_site
 
-ggplot(data=b_long_all_edit_site, aes(x=Year, group=station, color=Species)) + 
+ggplot(data=b_long_all_edit_site, aes(x=Year, group=Species, color=Species)) + 
   scale_color_manual(values=c("navy","darkred")) +
   geom_point(aes(y=`median_log`),size=2, na.rm = TRUE) +
   geom_line(aes(y=`median_log`),size=0.5, na.rm = TRUE) +
   geom_errorbar(aes(ymin = p05_log, ymax = p95_log), width = 0.1) +
-  facet_wrap(station~Species) +theme_bw() +		## makes background white
+  facet_wrap(station~., ncol=1) +theme_bw() +		## makes background white
   theme(  panel.background = element_rect(fill='white', colour='white'),
           panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(), 
@@ -1580,10 +1579,10 @@ ggplot(data=b_long_all_edit_site, aes(x=Year, group=station, color=Species)) +
           strip.text.x=element_text(size=14, face='italic'),
           legend.text=element_text(size=12),
           legend.title = element_blank(),
-         legend.box = "vertical") + ylab("log(Abundance)")-> biomass_site_chovy_sard
+         legend.box = "vertical") + ylab("log(Abundance)")+ annotate("rect", xmin = 2014, xmax = 2019, ymin = -3, ymax = 10, alpha = .2,fill = "darkred")-> biomass_site_chovy_sard
 biomass_site_chovy_sard
 
-ggsave(biomass_site_chovy_sard, file =here::here("analysis","figures","anchovy_sardine_time_facet.png"), width = 12, height = 8)
+ggsave(biomass_site_chovy_sard, file =here::here("analysis","figures","anchovy_sardine_time_facet.png"), width = 14, height = 8)
 
 
 ```
@@ -1617,7 +1616,7 @@ b_long_all_edit_site %>%
 biomass_conc
 
 
-ggsave(biomass_conc, file =here::here("analysis","figures","anchovy_sardine_time_pt.conception.png"), width = 12, height = 8)
+ggsave(biomass_conc, file =here::here("analysis","figures","anchovy_sardine_time_pt.conception.png"), width = 14, height = 8)
 
 ```
 
@@ -1650,7 +1649,7 @@ log_sst_model_df2 %>%
 
 habitat_association_fig_all
 
-ggsave(habitat_association_fig_all, file =here::here("analysis","figures","habitat_association_fig_all.png"), width = 12, height = 8)
+ggsave(habitat_association_fig_all, file =here::here("analysis","figures","habitat_association_fig_all.png"), width = 14, height = 8)
 
 ```
 
@@ -1748,7 +1747,7 @@ b_master_out_type %>%
 sum_habitat_temp_regression
 
 
-ggsave(sum_habitat_temp_regression, file =here::here("analysis","figures","sum_habitat_temp_regression.png"), width = 12, height = 12)
+ggsave(sum_habitat_temp_regression, file =here::here("analysis","figures","sum_habitat_temp_regression.png"), width = 14, height = 8)
 ```
 
 ```{r}
