@@ -1,9 +1,12 @@
 ---
 title: "Supplement S2"
 author: "Gold et al. 2021"
+
 output:
   pdf_document:
     latex_engine: pdflatex
+bibliography: references.bib
+csl: science.csl
 ---
 
 ```{r setup, include=FALSE}
@@ -22,11 +25,11 @@ library(patchwork)
 \renewcommand{\thetable}{S2.\arabic{table}}
 \setcounter{table}{0}
 
-# Model description of metabarcoding analysis of CALCOFI samples
+# Model description of morphology and metabarcoding analysis of CALCOFI samples
 
 ### Motivating models.
 
-We use metabarcoding approaches outlined in Supplement S1 to produce amplicons from ethanol-preserved icthyoplankton samples. Briefly, we generated amplicons using the MiFish **12S** Universal Teleost primer set on DNA extractions derived using the Qiagen DNeasy Blood and Tissue kit filtered ethanol-preservative. Each amplicon library was sequenced separately on an Illumina NextSeq. See Supplement S1 for full details.
+We use metabarcoding approaches outlined in Supplement S1 to produce amplicons from ethanol-preserved icthyoplankton samples. Briefly, we generated amplicons using the MiFish *12S* Universal Teleost primer set [@miya2015mifish] on DNA extractions derived using the Qiagen DNeasy Blood and Tissue kit filtered ethanol-preservative. Each amplicon library was sequenced separately on an Illumina NextSeq. See Supplement S1 for full details.
 
 We estimate that, for any species $i$, the number of sequenced amplicons is proportional to the fraction of DNA from that species in the PCR template.  The amplicons produced during a PCR reaction are governed by the efficiency parameter $a_i$, which is characteristic of the interaction between the particular primer set and each species being amplified. Thus, for any species $i$, the number of amplicons should be directly related to the efficiency of amplification and the starting concentration of DNA template such that 
 
@@ -166,6 +169,6 @@ Table: Prior and parameter descriptions for the Stan Model.
 Stan Development Team (2020). RStan: the R interface to Stan. R package version 2.21.2.
   http://mc-stan.org/.
 
-
+<div id="refs"></div>
 
 

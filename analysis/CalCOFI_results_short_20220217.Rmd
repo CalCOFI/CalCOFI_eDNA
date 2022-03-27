@@ -75,9 +75,48 @@ col_27[13] <- br1[4]
 col_23 <- c(dar1, dar2, id1, id2, moon2[1], moon1[5])
 
 palette.new <- read_csv(here("data", "alternative.pallete.csv"))
+palette.new %>% 
+mutate(
+.,
+color = case_when(
+Type == "Benthic North" ~ "#006d2c",
+Type == "Benthic Central"  ~ "#31a354"  ,
+Type == "Benthic Cosmopolitan"  ~
+"#31a354"  ,
+Type == "Benthic South"  ~ "#74c476"  ,
+Type == "Mesopelagic North" ~ "#08519c",
+Type == "Mesopelagic South"  ~ "#cb181d" ,
+Type == "Mesopelagic Cosmopolitan"  ~ "#6baed6" ,
+Type == "Mesopelagic Central" ~ "#3182bd" ,
+Type == "Coastal Pelagic Central" ~ "#969696",
+Type == "Coastal Pelagic North" ~ "black",
+Type == "Cosmopolitan"   ~ "grey80"   ,
+TRUE ~ "white"
+)) -> palette.new
+
 
 palette.new3 <-
   read_csv(here("data", "alternative.pallete.csv")) %>% filter (!str_detect(Type, "Coastal Pelagic North"))
+
+palette.new3 %>% 
+mutate(
+.,
+color = case_when(
+Type == "Benthic North" ~ "#006d2c",
+Type == "Benthic Central"  ~ "#31a354"  ,
+Type == "Benthic Cosmopolitan"  ~
+"#31a354"  ,
+Type == "Benthic South"  ~ "#74c476"  ,
+Type == "Mesopelagic North" ~ "#08519c",
+Type == "Mesopelagic South"  ~ "#cb181d" ,
+Type == "Mesopelagic Cosmopolitan"  ~ "#6baed6" ,
+Type == "Mesopelagic Central" ~ "#3182bd" ,
+Type == "Coastal Pelagic Central" ~ "#969696",
+Type == "Coastal Pelagic North" ~ "black",
+Type == "Cosmopolitan"   ~ "grey80"   ,
+TRUE ~ "white"
+)) -> palette.new3
+
 
 
 pallete.fib1b <-
@@ -478,7 +517,7 @@ Type == "Mesopelagic South"  ~ "#cb181d" ,
 Type == "Mesopelagic Cosmopolitan"  ~ "#6baed6" ,
 Type == "Mesopelagic Central" ~ "#3182bd" ,
 Type == "Coastal Pelagic Central" ~ "#969696",
-Type == "Coastal Pelagic North" ~ "#969696",
+Type == "Coastal Pelagic North" ~ "black",
 Type == "Cosmopolitan"   ~ "grey80"   ,
 TRUE ~ "white"
 )
@@ -616,7 +655,7 @@ b_ID_main_out_site <- readRDS(file = here("data", "b_ID_main_out_site.RDS"))
 # saveRDS(test_nest_a, here("data","test_nest_a.RDS"))
 
 test_nest_a <- readRDS(file = here("data", "test_nest_a.RDS"))
-
+test_nest_a$data[1]
 #Format Data
 # test_nest_a_wc <- b_ID_main_out_site %>%
 # mutate(.,
@@ -3229,8 +3268,8 @@ biomass_site_chovy_sard
 b_long_all_edit_site %>% 
   filter(., station ==  "Pt. Conception") -> b_long_all_edit_site_conception
 
-coeff1 <- 2
-coeff2 <- -19
+coeff1 <- 2.4
+coeff2 <- -24
 
 biomass_conc <- ggplot(data=b_long_all_edit_site_conception, aes(x=Year)) + 
     geom_rect_pattern(
@@ -3250,7 +3289,7 @@ biomass_conc <- ggplot(data=b_long_all_edit_site_conception, aes(x=Year)) +
   geom_point(aes(y=`median_log`, group=Species, color=Species),size=2, na.rm = TRUE) +
   geom_line(aes(y=`median_log`,group=Species, color=Species),size=1, na.rm = TRUE) +
   geom_errorbar(aes(ymin = p05_log, ymax = p95_log,group=Species, color=Species), width = 0.1)  +
-geom_line(data=conc_temp, aes(x=Year, y=(coeff2+two_month_sst*coeff1)), size = 2, color= dar4[1]) +
+geom_line(data=conc_temp, aes(x=Year, y=(coeff2+two_month_sst*coeff1)), size = 2, color= "black") +
 scale_y_continuous(
     
     # Features of the first axis
@@ -3270,7 +3309,7 @@ scale_y_continuous(
           strip.background = element_rect(fill='grey90'), 
           strip.text.x=element_text(size=14, face='italic'),
           legend.text=element_text(size=12),
-          legend.position = c(0.2, 0.85),
+          legend.position = c(0.3, 0.9),
           legend.title = element_blank(),
          legend.box = "vertical")+facet_wrap(station~., ncol=1) 
 
@@ -3306,7 +3345,7 @@ biomass_sni <- ggplot(data=b_long_all_edit_site_sni, aes(x=Year)) +
   geom_point(aes(y=`median_log`, group=Species, color=Species),size=2, na.rm = TRUE) +
   geom_line(aes(y=`median_log`,group=Species, color=Species),size=1, na.rm = TRUE) +
   geom_errorbar(aes(ymin = p05_log, ymax = p95_log,group=Species, color=Species), width = 0.1)  +
-geom_line(data=sni_temp, aes(x=Year, y=(coeff2+two_month_sst*coeff1)), size = 2, color= dar4[2]) +
+geom_line(data=sni_temp, aes(x=Year, y=(coeff2+two_month_sst*coeff1)), size = 2, color= "black") +
 scale_y_continuous(
     
     # Features of the first axis
@@ -3326,7 +3365,7 @@ scale_y_continuous(
           strip.background = element_rect(fill='grey90'), 
           strip.text.x=element_text(size=14, face='italic'),
           legend.text=element_text(size=12),
-          legend.position = c(0.2, 0.85),
+          legend.position = c(0.3, 0.9),
           legend.title = element_blank(),
          legend.box = "vertical") +facet_wrap(station~., ncol=1) 
 
@@ -3340,6 +3379,11 @@ biomass_sni
 ```{r}
 b_long_all_edit_site %>% 
   filter(., station ==  "San Diego Inshore") -> b_long_all_edit_site_sdi
+
+
+coeff1i <- 2.4
+coeff2i <- -27
+
 
 biomass_sdi <- ggplot(data=b_long_all_edit_site_sdi, aes(x=Year)) + 
     geom_rect_pattern(
@@ -3359,7 +3403,7 @@ biomass_sdi <- ggplot(data=b_long_all_edit_site_sdi, aes(x=Year)) +
   geom_point(aes(y=`median_log`, group=Species, color=Species),size=2, na.rm = TRUE) +
   geom_line(aes(y=`median_log`,group=Species, color=Species),size=1, na.rm = TRUE) +
   geom_errorbar(aes(ymin = p05_log, ymax = p95_log,group=Species, color=Species), width = 0.1)  +
-geom_line(data=sdi_temp, aes(x=Year, y=(coeff2+two_month_sst*coeff1)), size = 2, color= dar4[3]) +
+geom_line(data=sdi_temp, aes(x=Year, y=(coeff2i+two_month_sst*coeff1i)), size = 2, color= "black") +
 scale_y_continuous(
     
     # Features of the first axis
@@ -3413,7 +3457,7 @@ biomass_sdo <- ggplot(data=b_long_all_edit_site_sdo, aes(x=Year)) +
   geom_point(aes(y=`median_log`, group=Species, color=Species),size=2, na.rm = TRUE) +
   geom_line(aes(y=`median_log`,group=Species, color=Species),size=1, na.rm = TRUE) +
   geom_errorbar(aes(ymin = p05_log, ymax = p95_log,group=Species, color=Species), width = 0.1)  +
-geom_line(data=sdo_temp, aes(x=Year, y=(coeff2+two_month_sst*coeff1)), size = 2, color= dar4[4]) +
+geom_line(data=sdo_temp, aes(x=Year, y=(coeff2+two_month_sst*coeff1)), size = 2, color= "black") +
 scale_y_continuous(
     
     # Features of the first axis
@@ -3433,7 +3477,7 @@ scale_y_continuous(
           strip.background = element_rect(fill='grey90'), 
           strip.text.x=element_text(size=14, face='italic'),
           legend.text=element_text(size=12),
-          legend.position = c(0.2, 0.85),
+          legend.position = c(0.3, 0.9),
           legend.title = element_blank(),
          legend.box = "vertical") + facet_wrap(station~., ncol=1) 
 
@@ -3466,7 +3510,7 @@ biomass_conc_wc <- ggplot(data=b_long_all_edit_site_conception, aes(x=Year)) +
   geom_point(aes(y=`median_log`, group=Species, color=Species),size=2, na.rm = TRUE) +
   geom_line(aes(y=`median_log`,group=Species, color=Species),size=1, na.rm = TRUE) +
   geom_errorbar(aes(ymin = p05_log, ymax = p95_log,group=Species, color=Species), width = 0.1)  +
-geom_line(data=conc_temp, aes(x=Year, y=(coeff2+mean_100_T*coeff1)), size = 2, color= dar4[1]) +
+geom_line(data=conc_temp, aes(x=Year, y=(coeff2+mean_100_T*coeff1)), size = 2, color= "black") +
 scale_y_continuous(
     
     # Features of the first axis
@@ -3504,12 +3548,25 @@ ggsave(biomass_conc_wc, file =here::here("analysis","figures","anchovy_sardine_t
 
 ```{r}
 
+
+palette.new
+
+
+palette.new$Type <- factor(palette.new$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+palette.new %>% arrange(Type) -> palette.new
+
+
+
 log_sst_model_df2 %>% 
   filter(., str_detect(Coeff_name,"temp_std"))  %>% 
-  filter(., Type %in% type_to_plot$Type) %>% 
-  ggplot(., aes(y= Coeff_value, x = Type, fill=Type)) +
+ # filter(., Type %in% type_to_plot$Type) %>% 
+  ggplot(., aes(y= Coeff_value, x = Type, colour=Type,fill=Type)) +
   geom_hline(yintercept = 0, linetype =2)+
-  geom_boxplot() + scale_fill_manual(values= pallete.fib1b$color) +  
+  geom_violin(alpha=0.2, outlier.shape = NA) + 
+  geom_point(size=2, alpha=.6) +
+  scale_colour_manual(values= palette.new$color) + 
+  scale_fill_manual(values= palette.new$color) + 
   theme(axis.text.x = element_text(size=14,angle= 50, hjust= 1), 
         panel.background = element_rect(fill='white', colour='white'),
           panel.grid.major = element_blank(), 
@@ -3668,23 +3725,29 @@ MHW_species_summary_sig_all$Type %>% unique() -> all_type
 palette.new %>% 
  filter(., Type %in% all_type) -> palette.new8
 
+palette.new8$Type <- factor(palette.new8$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+palette.new8 %>% arrange(Type) -> palette.new8
+
+
 MHW_species_summary_sig_all %>% 
           mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
                                `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant"))%>% 
   ggplot(., aes(y= mean, x= reorder(ID_main, -mean), fill=Type)) +  geom_bar(position="stack", stat="identity") +
-  scale_fill_manual( values = palette.new8$color) + ylab(expression(Delta*"Abundance")) + guides(fill=guide_legend(title="Habitat Association"))  +geom_text(aes(label=Sig_MHW, y = mean + 0.2 * sign(mean)))+
-  theme(axis.text.x = element_text(size=12,angle= 45, hjust= 1), 
+  scale_fill_manual( values = palette.new8$color) + ylab(expression(Delta*"Abundance")) + guides(fill=guide_legend(title="Habitat Association"))  +geom_text(aes(label=Sig_MHW, y = mean + 0.3 * sign(mean)),size=8)+
+  theme(axis.text.x = element_text(size=14,angle= 75, hjust= 1), 
         panel.background = element_rect(fill='white', colour='white'),
           panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(), 
-          axis.text.y=element_text(size=16, angle=0), 
+          axis.text.y=element_text(size=20, angle=0), 
           axis.title.x=element_blank(), 
-          axis.title.y=element_text(size=20, angle=90,face="bold"),
+          axis.title.y=element_text(size=24, angle=90,face="bold"),
           strip.background = element_rect(fill='white'), 
-          strip.text.x=element_text(size=15),
-          legend.text=element_text(size=10),
-          legend.title=element_text(size=12),
-          axis.line=element_line(colour='black') )  + facet_grid(station~ .)   -> mhw_differential_abundance_all
+          strip.text.y=element_text(size=18,face="bold"),
+          legend.text=element_text(size=14),
+          legend.title=element_text(size=18,face="bold"),
+          axis.line=element_line(colour='black'),
+        panel.spacing = unit(2, "lines"))  + facet_grid(station~ .)   -> mhw_differential_abundance_all
 mhw_differential_abundance_all
 
 ```
@@ -3693,7 +3756,7 @@ mhw_differential_abundance_all
 
 ```{r}
 
-MHW_species_summary_sig_site %>% 
+MHW_species_summary_sig_site_all %>% 
   filter(., station =="San Diego Offshore") -> sig_sd_off_mhw
 
 
@@ -3751,15 +3814,15 @@ ggsave(mhw_differential_abundance_south, file =here::here("analysis","figures","
 
 ```{r}
 
-MHW_species_summary_sig_site %>% 
-  filter(., station =="San Diego Offshore") -> sig_sd_off_mhw
+MHW_species_summary_sig_site_all %>% 
+  filter(., station =="San Diego Inshore") -> sig_sd_in_mhw
 
-sig_sd_off_mhw %>% 
+sig_sd_in_mhw %>% 
      left_join(trait_edna, by=c("ID_main")) %>% 
   arrange(desc(mean)) %>%  dplyr::select(species_color) -> MHW_species_summary_sig_colors_south
 
 
-sig_sd_off_mhw %>%
+sig_sd_in_mhw %>%
   left_join(trait_edna) -> MHW_species_summary_sig_south
 
 MHW_species_summary_sig_south %>% 
@@ -3779,6 +3842,12 @@ MHW_species_summary_sig_south$Type %>% unique() -> south_type
 
 palette.new %>% 
  filter(., Type %in% south_type) -> palette.new4
+
+
+palette.new4$Type <- factor(palette.new4$Type, levels=c("Benthic North" ,"Benthic Central","Benthic Cosmopolitan","Benthic South", "Coastal Pelagic North", "Coastal Pelagic Central","Mesopelagic North","Mesopelagic Central" , "Mesopelagic Cosmopolitan"  ,"Mesopelagic South"))
+
+palette.new4 %>% arrange(Type)  ->palette.new4
+
 
 MHW_species_summary_sig_south %>% 
           mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
@@ -3839,7 +3908,7 @@ as_ggplot(leg)  -> leggest
 ### SD Inshore
 
 ```{r}
-MHW_species_summary_sig_site %>% 
+MHW_species_summary_sig_site_all %>% 
   filter(., station =="San Diego Inshore") -> sig_sd_in_mhw
 
 sig_sd_in_mhw %>% 
@@ -3895,7 +3964,7 @@ mhw_differential_abundance_sd_in
 ### Pt. Conception
 
 ```{r}
-MHW_species_summary_sig_site %>% 
+MHW_species_summary_sig_site_all %>% 
   filter(., station =="Pt. Conception") -> sig_pc_mhw
 
 sig_pc_mhw %>% 
@@ -3950,7 +4019,7 @@ mhw_differential_abundance_pc
 ### San Nicholas Island
 
 ```{r}
-MHW_species_summary_sig_site %>% 
+MHW_species_summary_sig_site_all %>% 
   filter(., station =="San Nicholas Island") -> sig_sni_mhw
 
 sig_sni_mhw %>% 
@@ -4245,7 +4314,7 @@ ggsave(filename = here("analysis","figures","Figure_2.png"),
 mhw_differential_abundance_all 
 
 ggsave(filename = here("analysis","figures","Figure_3_MHW_dif_all.png"),
-       width=16,
+       width=14,
        height = 16,
        dpi = 400,
       units = c("in"))
@@ -4253,6 +4322,7 @@ ggsave(filename = here("analysis","figures","Figure_3_MHW_dif_all.png"),
 
 
 ```
+# Figure 4
 ```{r}
 
 
