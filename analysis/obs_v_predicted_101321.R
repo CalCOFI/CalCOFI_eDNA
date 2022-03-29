@@ -65,7 +65,7 @@ model_and_counts %>%
 
 ggsave(
   model_vs_counts,
-  file = here::here("analysis", "figures", "S1_fig_model_vs_counts.png"),
+  file = here::here("analysis", "figures", "S3_fig_model_vs_counts.png"),
   width = 12,
   height = 8
 )
@@ -111,7 +111,7 @@ reads_and_counts %>%
 
 ggsave(
   reads_vs_counts,
-  file = here::here("analysis", "figures", "S3_fig_reads_vs_counts.png"),
+  file = here::here("analysis", "figures", "S2_fig_reads_vs_counts.png"),
   width = 12,
   height = 8
 )
@@ -147,12 +147,12 @@ po_1a
 
 ggsave(
   po_1a,
-  file = here::here("analysis", "figures", "S2_fig_pred_reads_vs_obs_reads.png"),
+  file = here::here("analysis", "figures", "S3_fig_pred_reads_vs_obs_reads.png"),
   width = 12,
   height = 8
 )
 
-# Supplemental Figure 1. Co-detection of eDNA and Microscopy Data
+# Supplemental Figure 5. Co-detection of eDNA and Microscopy Data
 
 
 Output$D_mifish %>% 
@@ -190,9 +190,10 @@ cross_all_jars %>%
   dplyr::select(Species=ID_main,station_id, MiFish_detect, Morph_detect, type) ->b_heat
 
 wesanderson::wes_palette("Darjeeling1") -> col_dar
+wesanderson::wes_palette("Darjeeling2") -> col_dar2
 
 b_heat  %>% ggplot(., aes(x=Species, y=station_id, fill=type)) + 
-  geom_tile() + theme(axis.text.x = element_text(angle = 90)) + scale_fill_manual(name = "Detection Type", labels =c("Both Absent","Both Detected","eDNA Only","Microscopy Only"),values = c("white",col_dar[2],col_dar[5],col_dar[1])) +
+  geom_tile() + theme(axis.text.x = element_text(angle = 90)) + scale_fill_manual(name = "Detection Type", labels =c("Both Absent","Both Detected","eDNA Only","Microscopy Only"),values = c("white",col_dar[2],col_dar[5],col_dar2[3])) +
   ylab("Year x Station")-> b_heat_plot
 
 b_heat_plot
@@ -200,7 +201,7 @@ b_heat_plot
 
 ggsave(
   b_heat_plot,
-  file = here::here("analysis", "figures", "S4_fig_codetection_of_taxa.png"),
+  file = here::here("analysis", "figures", "S5_fig_codetection_of_taxa.png"),
   width = 18,
   height = 18
 )

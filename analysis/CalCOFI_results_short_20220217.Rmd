@@ -1042,8 +1042,8 @@ species_order_s4 %>%
 left_join(binomial_trait_color_pallete) -> log_trait_color_pallete_s4
   
 bionmial_station_model_df_2_plot %>% 
-  ggplot(., aes(x = station, y = ID_main, fill = T_statistic)) + geom_tile()  + scale_fill_distiller(palette = "Spectral", limits=c(-2, 2), breaks=c(-2,-1,-0,1,2)) + geom_text(aes(label =
-  Signficant)) + ylab("Species") + xlab("Station") + theme_bw()+
+  ggplot(., aes(x = station, y = ID_main, fill = T_statistic)) + geom_tile()  + scale_fill_viridis_c( option = "plasma",limits=c(-2, 2), breaks=c(-2,-1,-0,1,2)) + geom_text(aes(label =
+  Signficant),color="black", size=8) + ylab("Species") + xlab("Station") + theme_bw()+
   theme(axis.text.y=element_text(size=14,color=log_trait_color_pallete_s4$species_color),
 axis.text.x = element_text(
 size = 14,
@@ -1577,8 +1577,9 @@ left_join(log_trait_color_pallete) -> log_trait_color_pallete_s6
 log_station_model_df_2_plot %>% 
          mutate(., ID_main=recode(ID_main,`Sebastes`="Sebastes sp.",
                                `Stenobrachius nannochir`="Stenobrachius leucopsarus cold variant")) %>% 
-  ggplot(., aes(x = station, y = ID_main, fill = T_statistic)) + geom_tile()  + scale_fill_distiller(palette = "Spectral") + geom_text(aes(label =
-  Signficant)) + xlab("Station") + ylab("Species") + scale_fill_distiller(palette = "Spectral", limits=c(-4, 4), breaks=c(-4,-2,-1,-0,1,2,4))+ theme_bw() +
+  ggplot(., aes(x = station, y = ID_main, fill = T_statistic)) + geom_tile()   + xlab("Station") + ylab("Species") + scale_fill_viridis_c( option = "plasma", limits=c(-4, 4), breaks=c(-4,-2,-1,-0,1,2,4)) + geom_text(aes(label =
+  Signficant),color="black", size=8)+
+  theme_bw() +
   theme(axis.text.y=element_text(size=14,
                               color=log_trait_color_pallete_s6$species_color),
 axis.text.x = element_text(
