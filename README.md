@@ -1,4 +1,4 @@
-# Marine Heatwave-Driven Impacts on Fish Assemblages Uncovered Through Archived DNA
+# Message in a Bottle: Archived DNA Reveals Marine Heatwave-Associated Shifts in Fish Assemblages
 
 Zachary Gold<sup>1 , 2</sup> , Ryan P. Kelly<sup>3</sup>, Andrew Olaf Shelton<sup>2</sup>, Andrew Thompson<sup>4</sup>, Kelly D. Goodwin<sup>5</sup>, Ramon Gallego<sup>2</sup>, Kim Parsons<sup>2</sup>, Luke R. Thompson<sup>5 , 6</sup>,  Dovi Kacev<sup>7</sup>, Paul H. Barber<sup>8</sup>
 
