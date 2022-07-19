@@ -1,0 +1,1669 @@
+---
+title: "Environmental Variable Exploration"
+author: "Zack Gold"
+date: "6/22/2022"
+output: html_document
+---
+
+```{r}
+library(dotwhisker)
+library(tidyverse)
+library(ggcorrplot)
+library(vegan)
+library(rstanarm)
+library(here)
+library(broom.mixed)
+library(glmmTMB)
+library("bbmle")
+library(ggeffects)
+library(effects)
+library(parameters)
+```
+
+```{r}
+
+metadata2 <-
+read.csv(file = "../data/calcofi_metadata_analysis_20210907.csv")
+
+metadata2 %>% 
+  dplyr::select(ST_ID,Sta_ID,Year,mean_100_T,mean_100_Salinity,mean_100_O2,mean_100_PO4,mean_100_silicate,mean_100_NO3,mean_100_NO2,mean_100_CHLa,two_month_sst,annual_sst) -> df_sub
+```
+
+```{r}
+
+df_sub %>% 
+  dplyr::select(-Sta_ID,-Year,-ST_ID) %>% 
+  mutate_if(is.character, as.numeric) %>% as.matrix() -> df_sub_mat
+
+rownames(df_sub_mat) <-df_sub$ST_ID
+
+  
+corr <- cor(df_sub_mat)
+ggcorrplot(corr, hc.order = TRUE, type = "lower")
+
+ ggsave(
+  file = here::here("analysis", "figures", "environmental_variable_correlation.jpeg"),
+  width = 12,
+  height = 8
+  )
+```
+
+
+```{r}
+
+b_ID_main_out_site <- readRDS(file = here("data", "b_ID_main_out_site.RDS"))
+
+b_ID_main_out_site %>% 
+  mutate(.,
+station = fct_recode(station,
+"Pt.C" =  "80_60" ,
+"SaNI" = "86.7_50" ,
+"SDIn" = "93.3_30",
+"SDOf" = "93.3_60")
+) %>% 
+  dplyr::select(Year,  station, ID_main,Normalized.biomass=  mean) %>% 
+ # filter(., ID_main %in% species_to_keep$ID_main) %>% 
+  #mutate(., ID_main = str_replace(ID_main," ",".")) %>% 
+  unite(., "Year", c("Year","station"), sep=":") %>% 
+  pivot_wider(names_from=ID_main, values_from=Normalized.biomass) %>% 
+  as.data.frame()-> eDNA_long_all_wide2_sep
+
+eDNA_long_all_wide2_sep %>% dplyr::select(Year) %>% as.data.frame()-> sampledf_year_site
+eDNA_long_all_wide2_sep$Year -> rownames(sampledf_year_site)
+
+sampledf_year_site %>% 
+  separate(Year, into = c("Year","station"), sep=":", remove=FALSE) -> sampledf_year_site
+
+
+df_sub %>% 
+  mutate(., station = case_when(Sta_ID =="080.0 060.0" ~"Pt.C",
+                                Sta_ID =="086.7 050.0" ~"SaNI",
+                                Sta_ID =="093.3 060.0" ~"SDOf",
+                                Sta_ID =="093.3 030.0"~"SDIn"),
+         Year=as.integer(Year)) %>% dplyr::select(-ST_ID,-Sta_ID)->df_sub
+
+
+sampledf_year_site %>% 
+  mutate(.,Year=as.integer(Year)) %>%  
+  left_join(df_sub, by=c("Year"="Year","station"="station")) %>% 
+  unite(Year,  c("Year","station"), sep=":") %>% as.data.frame()-> sampledf_year_site
+
+
+sampledf_year_site$Year -> rownames(sampledf_year_site)
+sampledf_year_site[,-1] -> sampledf_year_site
+
+eDNA_long_all_wide2_sep %>% as.data.frame()-> eDNA_long_all_wide2_sep
+eDNA_long_all_wide2_sep$Year -> rownames(eDNA_long_all_wide2_sep)
+eDNA_long_all_wide2_sep[,-1] -> eDNA_long_all_wide2_sep
+
+
+```
+
+```{r}
+
+
+  
+#Format Data
+test_nest_a <- b_ID_main_out_site %>%
+mutate(.,
+Normalized.biomass = mean,
+log_Normalized.biomass = mean_log) %>%
+   mutate(., station = case_when(station =="80_60" ~"Pt.C",
+                                station =="86.7_50" ~"SaNI",
+                                station =="93.3_60" ~"SDOf",
+                                station =="93.3_30"~"SDIn"),
+         Year=as.integer(Year)) %>% 
+left_join(df_sub) %>%
+mutate(PA_biomass = if_else(Normalized.biomass > 0.01, 1, 0)) %>%  #NOTE change to small value, rather than actual zero, given model output
+ungroup() %>%
+mutate(temp_std = (two_month_sst - mean(two_month_sst)) / sd(two_month_sst)) %>%
+mutate(O2_std = (mean_100_O2 - mean(mean_100_O2)) / sd(mean_100_O2)) %>%
+mutate(PSU_std = (mean_100_Salinity - mean(mean_100_Salinity)) / sd(mean_100_Salinity)) %>%
+mutate(., ID_main = str_replace(ID_main, "AANOTHER", "sp.")) %>%
+group_by(ID_main) %>%
+nest
+
+test_a <- b_ID_main_out_site %>%
+mutate(.,
+Normalized.biomass = mean,
+log_Normalized.biomass = mean_log) %>%
+   mutate(., station = case_when(station =="80_60" ~"Pt.C",
+                                station =="86.7_50" ~"SaNI",
+                                station =="93.3_60" ~"SDOf",
+                                station =="93.3_30"~"SDIn"),
+         Year=as.integer(Year)) %>% 
+left_join(df_sub) %>%
+mutate(PA_biomass = if_else(Normalized.biomass > 0.01, 1, 0)) %>%  #NOTE change to small value, rather than actual zero, given model output
+ungroup() %>%
+mutate(temp_std = (two_month_sst - mean(two_month_sst)) / sd(two_month_sst)) %>%
+mutate(O2_std = (mean_100_O2 - mean(mean_100_O2)) / sd(mean_100_O2)) %>%
+mutate(PSU_std = (mean_100_Salinity - mean(mean_100_Salinity)) / sd(mean_100_Salinity)) %>%
+mutate(., ID_main = str_replace(ID_main, "AANOTHER", "sp."))
+
+test_a %>% 
+  dplyr::select(-Normalized.biomass,-log_Normalized.biomass,-mean_log,-sd_log) %>% 
+  write.csv(file=here("data","calcofi_model_means.csv"),quote = F)
+
+test_a %>% 
+  dplyr::select(-Normalized.biomass,-log_Normalized.biomass,-mean_log,-sd_log) %>% saveRDS(., file=here("data","calcofi_model_means.RDS"))
+
+library(knitr)
+
+test_a %>% 
+  dplyr::select(-Normalized.biomass,-log_Normalized.biomass,-mean_log,-sd_log) %>% 
+colnames(.) %>% kable()
+```
+
+
+```{r}
+
+library(MASS)
+ord <- metaMDS(eDNA_long_all_wide2_sep, k=2, trace=FALSE, distance = "bray",trymax=100, autotransform = FALSE)
+(fit <- envfit(ord, sampledf_year_site, perm = 999))
+scores(fit, "vectors")
+
+jpeg(file = here::here("analysis", "figures", "nmds_plot_env_variables.jpeg"))
+plot(ord)
+plot(fit)
+plot(fit, p.max = 0.05, col = "red")
+dev.off()
+
+
+```
+```{r}
+
+## Adding fitted arrows to CCA. We use "lc" scores, and hope
+## that arrows are scaled similarly in cca and envfit plots
+ord <- cca(eDNA_long_all_wide2_sep ~ two_month_sst +mean_100_O2 + mean_100_Salinity, sampledf_year_site)
+
+jpeg(file = here::here("analysis", "figures", "cca_plot_lc_scores_variables.jpeg"))
+plot(ord, type="p")
+fit <- envfit(ord, sampledf_year_site, perm = 999, display = "lc")
+plot(fit, p.max = 0.05, col = "red")
+dev.off()
+
+```
+
+```{r}
+## 'scaling' must be set similarly in envfit and in ordination plot
+jpeg(file = here::here("analysis", "figures", "cca_plot_sites_scores_variables.jpeg"))
+plot(ord, type = "p", scaling = "sites")
+fit <- envfit(ord, sampledf_year_site, perm = 0, display = "lc", scaling = "sites")
+plot(fit, col = "red")
+dev.off()
+
+```
+
+```{r}
+## Class variables, formula interface, and displaying the
+## inter-class variability with `ordispider', and semitransparent
+## white background for labels (semitransparent colours are not
+## supported by all graphics devices)
+
+ord <- cca(eDNA_long_all_wide2_sep ~ two_month_sst +mean_100_O2 + mean_100_Salinity,sampledf_year_site)
+fit <- envfit(ord ~ two_month_sst +mean_100_O2 + mean_100_Salinity, sampledf_year_site, perm = 0)
+plot(ord, type = "n")
+ordispider(ord, col="skyblue")
+points(ord, display = "sites", pch=16)
+plot(fit, cex=1.2, axis=TRUE, bg = rgb(1, 1, 1, 0.5))
+## Use shorter labels for factor centroids
+labels(fit)
+plot(ord)
+plot(fit, labels=list(factors = paste("M", c(1,2,4,5), sep = "")),
+   bg = rgb(1,1,0,0.5))
+
+```
+
+# AIC Analysis
+
+
+```{r}
+
+
+focalTaxon = "Triphoturus mexicanus"
+idx = which(test_nest_a$ID_main == focalTaxon)
+
+i=idx
+#Standardized
+glmer_stan_mod_log_temp_only <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std | station),
+                             family = "gaussian",
+                             data = test_nest_a$data[[i]],
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 2000,
+                             cores = 2)
+
+glmer_stan_mod_log_temp_O2 <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std + O2_std | station),
+                             family = "gaussian",
+                             data = test_nest_a$data[[i]],
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 2000,
+                             cores = 2)
+
+glmer_stan_mod_log_temp_PSU <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std + PSU_std | station),
+                             family = "gaussian",
+                             data = test_nest_a$data[[i]],
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 2000,
+                             cores = 2)
+
+glmer_stan_mod_log_O2_PSU <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + O2_std + PSU_std | station),
+                             family = "gaussian",
+                             data = test_nest_a$data[[i]],
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 2000,
+                             cores = 2)
+
+glmer_stan_mod_log_O2_PSU_temp <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + O2_std + PSU_std + temp_std| station),
+                             family = "gaussian",
+                             data = test_nest_a$data[[i]],
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 2000,
+                             cores = 2)
+
+
+#Un Standardized
+glmer_stan_mod_log_temp_only_un <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + two_month_sst | station),
+                             family = "gaussian",
+                             data = test_nest_a$data[[i]],
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 2000,
+                             cores = 2)
+
+glmer_stan_mod_log_temp_O2_un <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + two_month_sst + mean_100_O2 | station),
+                             family = "gaussian",
+                             data = test_nest_a$data[[i]],
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 2000,
+                             cores = 2)
+
+glmer_stan_mod_log_temp_PSU_un <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + two_month_sst + mean_100_Salinity | station),
+                             family = "gaussian",
+                             data = test_nest_a$data[[i]],
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 2000,
+                             cores = 2)
+
+glmer_stan_mod_log_O2_PSU_un <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + mean_100_O2 + mean_100_Salinity | station),
+                             family = "gaussian",
+                             data = test_nest_a$data[[i]],
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 2000,
+                             cores = 2)
+
+
+glmer_stan_mod_log_O2_PSU_temp_un <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + mean_100_O2 + mean_100_Salinity + two_month_sst| station),
+                             family = "gaussian",
+                             data = test_nest_a$data[[i]],
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 2000,
+                             cores = 2)
+
+
+```
+
+
+```{r}
+loo(glmer_stan_mod_log_O2_PSU) -> loo_O2_PSU
+loo(glmer_stan_mod_log_O2_PSU_temp) -> loo_O2_PSU_temp
+loo(glmer_stan_mod_log_O2_PSU_temp_un) -> loo_O2_PSU_temp_un
+loo(glmer_stan_mod_log_O2_PSU_un) -> loo_O2_PSU_un
+loo(glmer_stan_mod_log_temp_O2) -> loo_temp_O2
+loo(glmer_stan_mod_log_temp_O2_un) -> loo_temp_O2_un
+loo(glmer_stan_mod_log_temp_only) -> loo_temp_only
+loo(glmer_stan_mod_log_temp_only_un) -> loo_temp_only_un
+loo(glmer_stan_mod_log_temp_PSU) -> loo_temp_PSU
+loo(glmer_stan_mod_log_temp_PSU_un) -> loo_temp_PSU_un
+
+loo_compare( loo_O2_PSU,
+ loo_O2_PSU_temp,
+loo_O2_PSU_temp_un,
+loo_O2_PSU_un,
+loo_temp_O2,
+ loo_temp_O2_un,
+loo_temp_only,
+ loo_temp_only_un,
+ loo_temp_PSU,
+loo_temp_PSU_un)
+
+
+
+```
+ 
+ 
+# Temp Alone + Site
+```{R}
+# 
+# glmer_stan_mod_log <- tibble(test_nest_a$ID_main)
+# glmer_stan_mod_log$model <- list(0)
+# 
+# for (i in 1:nrow(glmer_stan_mod_log)){
+#   print(i)
+#   glmer_stan_mod_log$model[[i]] <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std | station),   #mod3
+#                              family = "gaussian",
+#                              data = test_nest_a$data[[i]],
+#                              #prior = normal(0, 4),
+#                             #prior_intercept = normal(0, 10),
+#                              adapt_delta = 0.99,
+#                              chains = 2,
+#                              iter = 2000,
+#                              cores = 2)
+# }
+#  
+glmer_stan_mod_log <- readRDS(here("data","glmer_stan_mod_log_20210909.RDS"))
+
+```
+
+# Model Success Demonstration
+```{r}
+
+
+
+focalTaxon = "Triphoturus mexicanus"
+idx = which(test_nest_a$ID_main == focalTaxon)
+
+i=idx
+
+summary(glmer_stan_mod_log$model[[idx]])
+prior_summary(glmer_stan_mod_log$model[[idx]])
+sd(test_nest_a$data[[idx]]$temp_std, na.rm = TRUE)
+print(glmer_stan_mod_log$model[[idx]])
+```
+
+```{r}
+
+test_nest_a$data[[idx]] %>%
+ggplot(aes(y = log_Normalized.biomass, x = temp_std)) +
+geom_point(color = "black") +
+#geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F) +
+geom_point(
+aes(y = glmer_stan_mod_log$model[[idx]]$fitted.values, x = temp_std),
+alpha = .5,
+color = "red"
+) +
+geom_smooth(
+aes(y = glmer_stan_mod_log$model[[idx]]$fitted.values, x = temp_std),
+method = "lm",
+se = F,
+size = 0.5,
+color = "red"
+) +
+facet_grid(. ~ station)
+
+
+ ggsave(
+  file = here::here("analysis", "figures", "T_mexicanus_temp_only_model_fit.jpeg"),
+  width = 12,
+  height = 8
+  )
+```
+
+```{R}
+
+loo_temp_only_holder <- tibble(test_nest_a$ID_main)
+loo_temp_only_holder$loo <- list(0)
+i=1
+
+for (i in 1:length(glmer_stan_mod_log$`test_nest_a$ID_main`)) {
+  loo_temp_only_holder$loo[[i]] <- loo(glmer_stan_mod_log$model[[i]])
+}
+
+
+```
+
+# O2 Alone + Site
+```{R}
+# 
+# glmer_stan_mod_log_O2 <- tibble(test_nest_a$ID_main)
+# glmer_stan_mod_log_O2$model <- list(0)
+# 
+# for (i in 1:nrow(glmer_stan_mod_log_O2)){
+#   print(i)
+#   glmer_stan_mod_log_O2$model[[i]] <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + O2_std | station),   #mod3
+#                              family = "gaussian",
+#                              data = test_nest_a$data[[i]],
+#                              #prior = normal(0, 4),
+#                             #prior_intercept = normal(0, 10),
+#                              adapt_delta = 0.99,
+#                              chains = 2,
+#                              iter = 2000,
+#                              cores = 2)
+# }
+# saveRDS(glmer_stan_mod_log_O2,here("data","glmer_stan_mod_log_O2_20220629.RDS"))
+
+glmer_stan_mod_log_O2 <- readRDS(here("data","glmer_stan_mod_log_O2_20220629.RDS"))
+
+```
+
+# Model Success Demonstration
+```{r}
+
+
+
+focalTaxon = "Triphoturus mexicanus"
+idx = which(test_nest_a$ID_main == focalTaxon)
+
+i=idx
+
+summary(glmer_stan_mod_log_O2$model[[idx]])
+prior_summary(glmer_stan_mod_log_O2$model[[idx]])
+sd(test_nest_a$data[[idx]]$temp_std, na.rm = TRUE)
+print(glmer_stan_mod_log_O2$model[[idx]])
+```
+
+```{r}
+
+test_nest_a$data[[idx]] %>%
+  mutate(., Species = test_nest_a$ID_main[[idx]] ) %>% 
+ggplot(aes(y = log_Normalized.biomass, x = O2_std)) +
+geom_point(color = "black") +
+#geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F) +
+geom_point(
+aes(y = glmer_stan_mod_log_O2$model[[idx]]$fitted.values, x = O2_std),
+alpha = .5,
+color = "red"
+) +
+geom_smooth(
+aes(y = glmer_stan_mod_log_O2$model[[idx]]$fitted.values, x = O2_std),
+method = "lm",
+se = F,
+size = 0.5,
+color = "red"
+) +
+facet_grid(Species ~ station)
+
+
+ ggsave(
+  file = here::here("analysis", "figures", "T_mexicanus_O2_only_model_fit.jpeg"),
+  width = 12,
+  height = 8
+  )
+```
+
+
+```{r}
+i=1
+O2_sig_species_idx <- c("Bathylagus pacificus",     "Cataetyx rubrirostris"  ,  "Citharichthys sordidus"   ,"Diogenichthys atlanticus", "Lyopsetta exilis"        , "Melamphaes lugubris" ,     "Microstomus pacificus"  ,  "Parophrys vetulus" ,       "Rhinogobiops nicholsii"  , "Sebastolobus sp."   ,     "Stenobrachius sp.")
+
+O2_sig_tib <- tibble(O2_sig_species_idx)
+O2_sig_tib$plot <- list(0)
+
+O2_sig_tib$idx <- 0
+
+for (i in 1:length(O2_sig_tib$idx)) {
+  O2_sig_tib$idx[[i]] <-which(test_nest_a$ID_main == O2_sig_species_idx[i])
+}
+
+for (i in 1:length(O2_sig_tib$idx)) {
+test_nest_a$data[[O2_sig_tib$idx[i]]] %>%
+    mutate(., Species = O2_sig_tib$O2_sig_species_idx[[i]] ) %>% 
+ggplot(aes(y = log_Normalized.biomass, x = O2_std)) +
+geom_point(color = "black") +
+#geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F) +
+geom_point(
+aes(y = glmer_stan_mod_log_O2$model[[O2_sig_tib$idx[i]]]$fitted.values, x = O2_std),
+alpha = .5,
+color = "red"
+) +
+geom_smooth(
+aes(y = glmer_stan_mod_log_O2$model[[O2_sig_tib$idx[i]]]$fitted.values, x = O2_std),
+method = "lm",
+se = F,
+size = 0.5,
+color = "red"
+) +
+facet_grid(Species ~ station) -> O2_sig_tib$plot[[i]]
+}
+
+library(patchwork)
+O2_sig_tib$plot[[1]]+O2_sig_tib$plot[[2]]+O2_sig_tib$plot[[3]]+O2_sig_tib$plot[[4]]+O2_sig_tib$plot[[5]]+O2_sig_tib$plot[[6]]+O2_sig_tib$plot[[7]]+O2_sig_tib$plot[[8]]+O2_sig_tib$plot[[9]]+O2_sig_tib$plot[[10]]+O2_sig_tib$plot[[11]]
+
+ ggsave(
+  file = here::here("analysis", "figures", "O2_only_model_best_fit.jpeg"),
+  width = 32,
+  height = 16
+  )
+```
+
+```{R}
+
+loo_O2_only_holder <- tibble(test_nest_a$ID_main)
+loo_O2_only_holder$loo <- list(0)
+i=1
+
+for (i in 1:length(glmer_stan_mod_log_O2$`test_nest_a$ID_main`)) {
+  loo_O2_only_holder$loo[[i]] <- loo(glmer_stan_mod_log_O2$model[[i]])
+}
+
+
+```
+
+# Temp+ O2 +Site
+```{r}
+# 
+# glmer_stan_mod_log_temp_O2 <- tibble(test_nest_a$ID_main)
+# glmer_stan_mod_log_temp_O2$model <- list(0)
+# i=1
+# for (i in 1:nrow(glmer_stan_mod_log_temp_O2)){
+#   print(i)
+#   glmer_stan_mod_log_temp_O2$model[[i]] <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std + O2_std | station),   #mod3
+#                              family = "gaussian",
+#                              data = test_nest_a$data[[i]],
+#                              #prior = normal(0, 4),
+#                             #prior_intercept = normal(0, 10),
+#                              adapt_delta = 0.99,
+#                              chains = 2,
+#                              iter = 2000,
+#                              cores = 2)
+# }
+# 
+# saveRDS(glmer_stan_mod_log_temp_O2, here("data","glmer_stan_mod_log_temp_O2_20220623.RDS"))
+
+glmer_stan_mod_log_temp_O2 <- readRDS( here("data","glmer_stan_mod_log_temp_O2_20220623.RDS"))
+
+```
+
+# Model Success Demonstration
+```{r}
+
+
+
+focalTaxon = "Triphoturus mexicanus"
+idx = which(test_nest_a$ID_main == focalTaxon)
+
+i=idx
+
+summary(glmer_stan_mod_log_temp_O2$model[[idx]])
+prior_summary(glmer_stan_mod_log_temp_O2$model[[idx]])
+sd(test_nest_a$data[[idx]]$temp_std, na.rm = TRUE)
+print(glmer_stan_mod_log_temp_O2$model[[idx]])
+```
+
+```{r}
+
+test_nest_a$data[[idx]] %>%
+ggplot(aes(y = log_Normalized.biomass, x = temp_std)) +
+geom_point(color = "black") +
+#geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F) +
+geom_point(
+aes(y = glmer_stan_mod_log_temp_O2$model[[idx]]$fitted.values, x = temp_std),
+alpha = .5,
+color = "red"
+) +
+geom_smooth(
+aes(y = glmer_stan_mod_log_temp_O2$model[[idx]]$fitted.values, x = temp_std),
+method = "lm",
+se = F,
+size = 0.5,
+color = "red"
+) +
+facet_grid(. ~ station)
+
+
+ ggsave(
+  file = here::here("analysis", "figures", "T_mexicanus_temp_O2_only_model_fit.jpeg"),
+  width = 12,
+  height = 8
+  )
+ 
+ 
+test_nest_a$data[[idx]] %>%
+ggplot(aes(y = log_Normalized.biomass, x = O2_std)) +
+geom_point(color = "black") +
+#geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F) +
+geom_point(
+aes(y = glmer_stan_mod_log_temp_O2$model[[idx]]$fitted.values, x = O2_std),
+alpha = .5,
+color = "red"
+) +
+geom_smooth(
+aes(y = glmer_stan_mod_log_temp_O2$model[[idx]]$fitted.values, x = O2_std),
+method = "lm",
+se = F,
+size = 0.5,
+color = "red"
+) +
+facet_grid(. ~ station)
+```
+
+```{R}
+
+loo_temp_O2_holder <- tibble(test_nest_a$ID_main)
+loo_temp_O2_holder$loo <- list(0)
+i=1
+
+for (i in 1:length(glmer_stan_mod_log_temp_O2$`test_nest_a$ID_main`)) {
+  loo_temp_O2_holder$loo[[i]] <- loo(glmer_stan_mod_log_temp_O2$model[[i]])
+}
+
+
+```
+
+# Site Alone
+```{R}
+# 
+# glmer_stan_mod_log_site_only <- tibble(test_nest_a$ID_main)
+# glmer_stan_mod_log_site_only$model <- list(0)
+# 
+# for (i in 1:nrow(glmer_stan_mod_log_site_only)){
+#   print(i)
+#   glmer_stan_mod_log_site_only$model[[i]] <- stan_glmer(log_Normalized.biomass ~ 0 + (1 | station),   #mod3
+#                              family = "gaussian",
+#                              data = test_nest_a$data[[i]],
+#                              #prior = normal(0, 4),
+#                             #prior_intercept = normal(0, 10),
+#                              adapt_delta = 0.99,
+#                              chains = 2,
+#                              iter = 2000,
+#                              cores = 2)
+# }
+# saveRDS(glmer_stan_mod_log_site_only,here("data","glmer_stan_mod_log_site_only_20220629.RDS"))
+
+glmer_stan_mod_log_site_only <- readRDS(here("data","glmer_stan_mod_log_site_only_20220629.RDS"))
+
+```
+
+```{R}
+
+loo_site_only_holder <- tibble(test_nest_a$ID_main)
+loo_site_only_holder$loo <- list(0)
+i=1
+
+for (i in 1:length(glmer_stan_mod_log_site_only$`test_nest_a$ID_main`)) {
+  loo_site_only_holder$loo[[i]] <- loo(glmer_stan_mod_log_site_only$model[[i]])
+}
+
+
+```
+
+# Temp + O2 + Salinity + Site
+
+```{r}
+# 
+# glmer_stan_mod_log_temp_O2_psu <- tibble(test_nest_a$ID_main)
+# glmer_stan_mod_log_temp_O2_psu$model <- list(0)
+# i=1
+# for (i in 1:nrow(glmer_stan_mod_log_temp_O2_psu)){
+#   print(i)
+#   glmer_stan_mod_log_temp_O2_psu$model[[i]] <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std +PSU_std + O2_std | station),   #mod3
+#                              family = "gaussian",
+#                              data = test_nest_a$data[[i]],
+#                              #prior = normal(0, 4),
+#                             #prior_intercept = normal(0, 10),
+#                              adapt_delta = 0.99,
+#                              chains = 2,
+#                              iter = 2000,
+#                              cores = 2)
+# }
+# 
+# saveRDS(glmer_stan_mod_log_temp_O2_psu, here("data","glmer_stan_mod_log_temp_O2_psu_20220623.RDS"))
+
+glmer_stan_mod_log_temp_O2_psu <- readRDS( here("data","glmer_stan_mod_log_temp_O2_psu_20220623.RDS"))
+
+```
+
+```{R}
+
+loo_temp_O2_psu_holder <- tibble(test_nest_a$ID_main)
+loo_temp_O2_psu_holder$loo <- list(0)
+i=1
+
+for (i in 1:length(glmer_stan_mod_log_temp_O2_psu$`test_nest_a$ID_main`)) {
+  loo_temp_O2_psu_holder$loo[[i]] <- loo(glmer_stan_mod_log_temp_O2_psu$model[[i]])
+}
+
+
+```
+
+#Loo Compare
+```{r}
+
+
+loo_compare_holder <- tibble(test_nest_a$ID_main)
+loo_compare_holder$loo_compare <- list(0)
+
+
+for (i in 1:length(glmer_stan_mod_log_temp_O2_psu$`test_nest_a$ID_main`)) {
+  loo_compare_holder$loo_compare[[i]] <- loo_compare(loo_temp_only_holder$loo[[i]],loo_temp_O2_holder$loo[[i]],loo_temp_O2_psu_holder$loo[[i]],loo_site_only_holder$loo[[i]],loo_O2_only_holder$loo[[i]])
+}
+
+loo_compare_holder$loo_compare
+i=1
+
+loo_compare_holder$loo_compare[[i]] %>% 
+ as.data.frame() %>%
+  as_tibble(rownames = "Model") %>% 
+  mutate(., Species = loo_compare_holder$`test_nest_a$ID_main`[[i]]) -> loo_compare_long
+ 
+for (i in 2:length(glmer_stan_mod_log_temp_O2_psu$`test_nest_a$ID_main`)) {
+loo_compare_holder$loo_compare[[i]] %>% 
+  as.data.frame() %>%
+  as_tibble(rownames = "Model") %>% 
+  mutate(., Species = loo_compare_holder$`test_nest_a$ID_main`[[i]]) -> loo_compare_long_int
+ loo_compare_long = rbind(loo_compare_long,loo_compare_long_int)
+}
+saveRDS(loo_compare_long, here("data","loo_compare_long_20220623.RDS"))
+
+loo_compare_long %>% 
+   mutate(., Variables = case_when(Model =="glmer_stan_mod_log_temp_O2_psu$model[[i]]" ~"Temp+O2+PSU | Site",
+                                Model =="glmer_stan_mod_log$model[[i]]" ~"Temp | Site",
+                                Model =="glmer_stan_mod_log_temp_O2$model[[i]]"~"Temp+O2 | Site",
+                                Model =="glmer_stan_mod_log_O2$model[[i]]"~"O2 | Site",
+                                Model =="glmer_stan_mod_log_site_only$model[[i]]"~"| Site Only")) -> loo_compare_long
+
+loo_compare_long %>% 
+  filter(., elpd_diff==0) %>% 
+  group_by(Variables) %>% 
+  count()
+
+loo_compare_long %>% 
+    filter(., elpd_diff==0) %>% 
+  filter(., Model =="glmer_stan_mod_log_O2$model[[i]]") -> O2_models_env_best_fit
+
+O2_models_env_best_fit$Species %>% unique()
+
+loo_compare_long %>% 
+    filter(., elpd_diff==0) %>% 
+  filter(., Model =="glmer_stan_mod_log$model[[i]]") -> SST_models_env_best_fit
+SST_models_env_best_fit$Species %>% unique()
+
+loo_compare_long %>% 
+    filter(., elpd_diff==0) %>% 
+  filter(., Model =="glmer_stan_mod_log_site_only$model[[i]]") -> site_models_env_best_fit
+
+site_models_env_best_fit$Species %>% unique()
+
+loo_compare_long %>% 
+    filter(., elpd_diff==0) %>% 
+  filter(., Model =="glmer_stan_mod_log_temp_O2_psu$model[[i]]") -> models_all_three_env_best_fit
+
+loo_compare_long %>% 
+  filter(., Species %in% models_all_three_env_best_fit$Species)
+
+  
+
+loo_compare_long %>% 
+   mutate(., Variables = case_when(Model =="glmer_stan_mod_log_temp_O2_psu$model[[i]]" ~"Temp+O2+PSU",
+                                Model =="glmer_stan_mod_log$model[[i]]" ~"Temp",
+                                Model =="glmer_stan_mod_log_temp_O2$model[[i]]"~"Temp+O2")) %>% 
+  ggplot(., aes(x=Variables, y=elpd_diff, fill=Variables)) + geom_col() +geom_errorbar(aes(ymax=elpd_diff+se_diff, ymin=elpd_diff-se_diff),width = 0.5, size=1.2) + 
+    geom_abline(intercept=0, slope=0,colour="red",linetype = "dashed")+
+  facet_wrap(Species ~., scales = "free_y")+theme_bw() +theme(axis.text.x = element_text(
+size = 12,
+angle = 30,
+hjust = 1
+)) 
+
+
+
+ ggsave(
+  file = here::here("analysis", "figures", "model_comparison.jpeg"),
+  width = 16,
+  height = 16
+  )
+```
+
+
+# Variables no Site
+
+# Temp Alone 
+```{r}
+
+# model_holder_sst_no_site <- tibble(test_nest_a$ID_main)
+# model_holder_sst_no_site$model <- list(0)
+# 
+# for (i in 1:nrow(model_holder_sst_no_site)) {
+# print(i)
+# model_holder_sst_no_site$model[[i]] <-
+# stan_glm(
+# log_Normalized.biomass ~ temp_std ,
+# #mod3
+# family = "gaussian",
+# data = test_nest_a$data[[i]],
+# #prior = normal(0, 4),
+# #prior_intercept = normal(0, 10),
+# #adapt_delta = 0.99,
+# chains = 2,
+# iter = 1000
+# )
+# }
+# 
+# saveRDS(model_holder_sst_no_site,
+# here("data", "model_holder_biomass_sst_only_20210909.RDS"))
+
+model_holder_sst_no_site <-
+  readRDS(here("data", "model_holder_biomass_sst_only_20210909.RDS"))
+
+```
+
+```{R}
+
+loo_temp_no_site_holder <- tibble(test_nest_a$ID_main)
+loo_temp_no_site_holder$loo <- list(0)
+i=1
+
+for (i in 1:length(model_holder_sst_no_site$`test_nest_a$ID_main`)) {
+  loo_temp_no_site_holder$loo[[i]] <- loo(model_holder_sst_no_site$model[[i]])
+}
+
+
+```
+
+
+
+# Model Success Demonstration
+```{r}
+
+focalTaxon = "Triphoturus mexicanus"
+idx = which(test_nest_a$ID_main == focalTaxon)
+
+i=idx
+
+summary(model_holder_sst_no_site$model[[idx]])
+prior_summary(model_holder_sst_no_site$model[[idx]])
+sd(test_nest_a$data[[idx]]$temp_std, na.rm = TRUE)
+print(model_holder_sst_no_site$model[[idx]])
+
+```
+
+```{r}
+
+
+test_nest_a$data[[idx]] %>%
+ggplot(aes(y = log_Normalized.biomass, x = temp_std)) +
+geom_point(color = "black") +
+#geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F) +
+geom_point(
+aes(y = model_holder_sst_no_site$model[[idx]]$fitted.values, x = temp_std),
+alpha = .5,
+color = "red"
+) +
+geom_smooth(
+aes(y = model_holder_sst_no_site$model[[idx]]$fitted.values, x = temp_std),
+method = "lm",
+se = T,
+size = 0.5,
+color = "red"
+) 
+
+
+ ggsave(
+  file = here::here("analysis", "figures", "T_mexicanus_temp_only_no_site_model_fit.jpeg"),
+  width = 12,
+  height = 8
+  )
+```
+
+# Temp + O2
+
+```{r}
+
+model_holder_sst_o2_no_site <- tibble(test_nest_a$ID_main)
+model_holder_sst_o2_no_site$model <- list(0)
+
+for (i in 1:nrow(model_holder_sst_o2_no_site)) {
+print(i)
+model_holder_sst_o2_no_site$model[[i]] <-
+stan_glm(
+log_Normalized.biomass ~ temp_std + O2_std,
+#mod3
+family = "gaussian",
+data = test_nest_a$data[[i]],
+#prior = normal(0, 4),
+#prior_intercept = normal(0, 10),
+#adapt_delta = 0.99,
+chains = 2,
+iter = 1000
+)
+}
+
+saveRDS(model_holder_sst_o2_no_site,
+here("data", "model_holder_biomass_sst_O2_20220627.RDS"))
+
+model_holder_sst_o2_no_site <-
+  readRDS(here("data", "model_holder_biomass_sst_O2_20220627.RDS"))
+
+```
+
+```{R}
+
+loo_temp_O2_no_site_holder <- tibble(test_nest_a$ID_main)
+loo_temp_O2_no_site_holder$loo <- list(0)
+i=1
+
+for (i in 1:length(model_holder_sst_o2_no_site$`test_nest_a$ID_main`)) {
+  loo_temp_O2_no_site_holder$loo[[i]] <- loo(model_holder_sst_o2_no_site$model[[i]])
+}
+
+
+```
+
+# Temp + O2 + PSU
+```{r}
+
+model_holder_sst_o2_psu_no_site <- tibble(test_nest_a$ID_main)
+model_holder_sst_o2_psu_no_site$model <- list(0)
+
+for (i in 1:nrow(model_holder_sst_o2_psu_no_site)) {
+print(i)
+model_holder_sst_o2_psu_no_site$model[[i]] <-
+stan_glm(
+log_Normalized.biomass ~ temp_std + O2_std+ PSU_std,
+#mod3
+family = "gaussian",
+data = test_nest_a$data[[i]],
+#prior = normal(0, 4),
+#prior_intercept = normal(0, 10),
+#adapt_delta = 0.99,
+chains = 2,
+iter = 1000
+)
+}
+
+saveRDS(model_holder_sst_o2_psu_no_site,
+here("data", "model_holder_biomass_sst_O2_psu_20220627.RDS"))
+
+model_holder_sst_o2_psu_no_site <-
+  readRDS(here("data", "model_holder_biomass_sst_O2_psu_20220627.RDS"))
+
+```
+
+```{R}
+
+loo_temp_O2_psu_no_site_holder <- tibble(test_nest_a$ID_main)
+loo_temp_O2_psu_no_site_holder$loo <- list(0)
+i=1
+
+for (i in 1:length(model_holder_sst_o2_psu_no_site$`test_nest_a$ID_main`)) {
+  loo_temp_O2_psu_no_site_holder$loo[[i]] <- loo(model_holder_sst_o2_psu_no_site$model[[i]])
+}
+
+
+```
+
+#Loo Compare No Site
+```{r}
+
+
+loo_compare_no_site_holder <- tibble(test_nest_a$ID_main)
+loo_compare_no_site_holder$loo_compare <- list(0)
+
+
+for (i in 1:length(glmer_stan_mod_log_temp_O2_psu$`test_nest_a$ID_main`)) {
+  loo_compare_no_site_holder$loo_compare[[i]] <- loo_compare(loo_temp_no_site_holder$loo[[i]],loo_temp_O2_no_site_holder$loo[[i]],loo_temp_O2_psu_no_site_holder$loo[[i]])
+}
+
+loo_compare_no_site_holder$loo_compare
+i=1
+
+loo_compare_no_site_holder$loo_compare[[i]] %>% 
+ as.data.frame() %>%
+  as_tibble(rownames = "Model") %>% 
+  mutate(., Species = loo_compare_no_site_holder$`test_nest_a$ID_main`[[i]]) -> loo_compare_long_no_site
+ 
+for (i in 2:length(glmer_stan_mod_log_temp_O2_psu$`test_nest_a$ID_main`)) {
+loo_compare_no_site_holder$loo_compare[[i]] %>% 
+  as.data.frame() %>%
+  as_tibble(rownames = "Model") %>% 
+  mutate(., Species = loo_compare_no_site_holder$`test_nest_a$ID_main`[[i]]) -> loo_compare_long_int_no_site
+ loo_compare_long_no_site = rbind(loo_compare_long_no_site,loo_compare_long_int_no_site)
+}
+saveRDS(loo_compare_long_no_site, here("data","loo_compare_long_no_site_20220628.RDS"))
+
+loo_compare_long_no_site %>% 
+  filter(., elpd_diff==0) %>% 
+  group_by(Model) %>% 
+  count()
+
+loo_compare_long_no_site %>% 
+    filter(., elpd_diff==0) %>% 
+  filter(., Model =="glmer_stan_mod_log_temp_O2_psu$model[[i]]") -> models_all_three_env_best_fit_no_site
+
+loo_compare_long_no_site %>% 
+  filter(., Species %in% models_all_three_env_best_fit$Species)
+
+  
+
+loo_compare_long_no_site %>% 
+   mutate(., Variables = case_when(Model =="model_holder_sst_o2_psu_no_site$model[[i]]" ~"Temp+O2+PSU",
+                                Model =="model_holder_sst_no_site$model[[i]]" ~"Temp",
+                                Model =="model_holder_sst_o2_no_site$model[[i]]"~"Temp+O2")) %>% 
+  ggplot(., aes(x=Variables, y=elpd_diff, fill=Variables)) + geom_col() +geom_errorbar(aes(ymax=elpd_diff+se_diff, ymin=elpd_diff-se_diff),width = 0.5, size=1.2) + 
+    geom_abline(intercept=0, slope=0,colour="red",linetype = "dashed")+
+  facet_wrap(Species ~., scales = "free_y")+theme_bw() +theme(axis.text.x = element_text(
+size = 12,
+angle = 30,
+hjust = 1
+)) 
+
+
+
+ ggsave(
+  file = here::here("analysis", "figures", "model_comparison_no_site.jpeg"),
+  width = 16,
+  height = 16
+  )
+```
+
+# R1 Combined Model Temp Alone + Site Nesting
+```{R}
+
+glmer_stan_mod_log_combo<- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std | ID_main/station),   #mod3
+                             family = "gaussian",
+                             data = test_a,
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 1000,
+                             cores = 2)
+
+saveRDS(glmer_stan_mod_log_combo,here("data","glmer_stan_mod_log_combo.RDS"))
+
+glmer_stan_mod_log_combo <- readRDS(here("data","glmer_stan_mod_log_combo.RDS"))
+
+
+glmer_stan_mod_log_combo
+summary(glmer_stan_mod_log_combo)
+```
+
+```{r}
+
+
+station_fix_test <- stan_glmer(log_Normalized.biomass ~ station + (1 + temp_std | ID_main:station),   #mod3
+                             family = "gaussian",
+                             data = test_a,
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 1000,
+                             cores = 2)
+
+saveRDS(station_fix_test,here("data","station_fix_test.RDS"))
+
+
+```
+
+```{r}
+
+
+station_fix_test2 <- stan_glmer(log_Normalized.biomass ~ station + (1 + temp_std | ID_main),   #mod3
+                             family = "gaussian",
+                             data = test_a,
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 1000,
+                             cores = 2)
+
+saveRDS(station_fix_test2,here("data","station_fix_test2.RDS"))
+
+
+```
+
+# Model Success Demonstration
+
+
+```{r}
+
+test_a %>%
+ggplot(aes(y = log_Normalized.biomass, x = temp_std)) +
+geom_point(color = "black") +
+#geom_smooth(method = "glm", method.args = list(family = "binomial"), se = F) +
+geom_point(
+aes(y = glmer_stan_mod_log_combo$fitted.values, x = temp_std),
+alpha = .5,
+color = "red"
+) +
+  stat_lineribbon(aes(y =  glmer_stan_mod_log_combo$fitted.values, x = temp_std), .width = c(.95, .80, .50),
+                  alpha = 1/2, colour = "red")
+
+geom_smooth(
+aes(y = glmer_stan_mod_log_combo$fitted.values, x = temp_std),
+method = "lm",
+se = F,
+size = 0.5,
+color = "red"
+) +
+facet_grid(ID_main ~ station, scales="free_y")
+
+
+ ggsave(
+  file = here::here("analysis", "figures", "large_model_temp_only_model_fit.jpeg"),
+  width = 24,
+  height = 40
+  )
+```
+
+
+# V2 Combined Model Temp Alone + Site No Nesting
+```{R}
+
+glmer_stan_mod_log_combo_v2 <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std | ID_main:station),   #mod3
+                             family = "gaussian",
+                             data = test_a,
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 1000,
+                             cores = 2)
+
+saveRDS(glmer_stan_mod_log_combo_v2,here("data","glmer_stan_mod_log_combo_v2.RDS"))
+
+glmer_stan_mod_log_combo_v2 <- readRDS(here("data","glmer_stan_mod_log_combo_v2.RDS"))
+
+
+glmer_stan_mod_log_combo_v2
+summary(glmer_stan_mod_log_combo)
+```
+
+```{r}
+
+model_coeff_holder_v2 <-cbind(
+glmer_stan_mod_log_combo_v2$coefficients %>% as_tibble(rownames = "Coeff") %>% dplyr::select(Coeff,Coeff_value=value)
+,
+glmer_stan_mod_log_combo_v2$ses %>% as_tibble(rownames = "ses") %>% dplyr::select(ses_value=value)
+,
+posterior_interval(glmer_stan_mod_log_combo_v2, regex_pars = "b") %>%  as.data.frame() %>%  as_tibble(rownames = "b") %>% 
+  dplyr::select(`5%`,`95%`)
+)
+
+model_coeff_holder_v2 %>%
+separate(Coeff,into =c("c1","c2","station","Species"), sep=":",remove=F) %>% 
+  mutate(., Species = if_else(is.na(Species),c2,Species),
+T_statistic = Coeff_value / ses_value,
+Signficant = case_when(
+`5%` > 0 & `95%` > 0 ~ "+",
+`5%` < 0 & `95%` < 0 ~ "-",
+TRUE ~ ""
+),
+station = case_when(
+str_detect(Coeff, "Pt.C") ~ "Pt. Conception",
+str_detect(Coeff, "SaNI") ~ "San Nicholas Island",
+str_detect(Coeff, "SDIn") ~ "San Diego Inshore",
+str_detect(Coeff, "SDOf") ~ "San Diego Offshore",
+TRUE ~ "NA"
+)
+) %>% 
+  mutate(., Species = str_remove(Species,"]"))-> biomass_station_model_df_v2
+
+biomass_station_model_df_v2 %>%
+filter(., str_detect(Coeff, "temp_std")) %>%
+filter(., Signficant != "") 
+
+```
+# R2 Combined Model Temp Alone
+```{R}
+
+glmer_stan_mod_log_combo_R2 <- stan_glmer(log_Normalized.biomass ~ 0 + (1 + temp_std | ID_main),   #mod3
+                             family = "gaussian",
+                             data = test_a,
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 1000,
+                             cores = 2)
+
+saveRDS(glmer_stan_mod_log_combo_R2,here("data","glmer_stan_mod_log_combo_R2.RDS"))
+
+glmer_stan_mod_log_combo_R2 <- readRDS(here("data","glmer_stan_mod_log_combo_R2.RDS"))
+
+
+glmer_stan_mod_log_combo_R2
+summary(glmer_stan_mod_log_combo_R2)
+```
+
+# R3 Combined Model Temp Alone + Site Nesting Fixed
+```{R}
+
+glmer_stan_mod_log_combo_R3 <- stan_glmer(log_Normalized.biomass ~ 1 + (1 + temp_std | ID_main/station),   #mod3
+                             family = "gaussian",
+                             data = test_a,
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 1000,
+                             cores = 2)
+
+saveRDS(glmer_stan_mod_log_combo_R3,here("data","glmer_stan_mod_log_combo_R3.RDS"))
+
+glmer_stan_mod_log_combo_R3 <- readRDS(here("data","glmer_stan_mod_log_combo_R3.RDS"))
+
+
+glmer_stan_mod_log_combo_R3
+summary(glmer_stan_mod_log_combo_R3)
+```
+
+
+# R4 Combined Model Temp Alone + Site Nesting Fixed
+```{R}
+
+glmer_stan_mod_log_combo_R4 <- stan_glmer(log_Normalized.biomass ~ 1 + (1 + temp_std | ID_main),   #mod3
+                             family = "gaussian",
+                             data = test_a,
+                             #prior = normal(0, 4),
+                            #prior_intercept = normal(0, 10),
+                             adapt_delta = 0.99,
+                             chains = 2,
+                             iter = 1000,
+                             cores = 2)
+
+saveRDS(glmer_stan_mod_log_combo_R4,here("data","glmer_stan_mod_log_combo_R4.RDS"))
+
+glmer_stan_mod_log_combo_R4 <- readRDS(here("data","glmer_stan_mod_log_combo_R4.RDS"))
+
+
+glmer_stan_mod_log_combo_R4
+summary(glmer_stan_mod_log_combo_R4)
+```
+
+#Loo Comparisons
+```{r}
+loo(glmer_stan_mod_log_combo, save_psis = TRUE, cores = 4) -> loo_R1
+loo(station_fix_test)  -> loo_station_fix
+loo(station_fix_test2)  -> loo_station_fix_2
+
+loo(glmer_stan_mod_log_combo_v2)  -> loo_v2
+loo(glmer_stan_mod_log_combo_R2)  -> loo_R2
+loo(glmer_stan_mod_log_combo_R3)  -> loo_R3
+loo(glmer_stan_mod_log_combo_R4)  -> loo_R4
+
+
+loo_compare(loo_R1,
+            loo_station_fix,
+            loo_v2,
+            loo_R2,
+            loo_R3,
+            loo_R4,
+            loo_station_fix_2) -> model_comparison
+```
+
+
+```{r}
+yrep <- posterior_predict(glmer_stan_mod_log_combo)
+y <- test_a$log_Normalized.biomass
+
+psis1 <- loo_R1$psis_object
+
+lw <- weights(psis1) # normalized log weights
+
+ppc_loo_pit_qq(y, yrep, lw = lw, compare = "normal")
+
+ggsave(
+  file = here::here("analysis", "figures", "qqplot.jpeg"),
+  width = 12,
+  height = 8
+  )
+ 
+```
+
+
+
+
+
+```{r}
+
+
+prior_summary(object = glmer_stan_mod_log_combo)
+print(glmer_stan_mod_log_combo)
+summary(residuals(glmer_stan_mod_log_combo))
+
+launch_shinystan(glmer_stan_mod_log_combo, ppd = FALSE)
+
+residuals(glmer_stan_mod_log_combo) %>% as_tibble() %>% 
+  ggplot(aes(value)) + geom_histogram()
+
+ ggsave(
+  file = here::here("analysis", "figures", "model_residuals.jpeg"),
+  width = 12,
+  height = 8
+  )
+
+```
+
+# glmmtmb
+
+```{R}
+
+
+
+
+glmmTMB_log_combo<- glmmTMB(mean ~ 0 + (1 + temp_std | ID_main/station),
+                            family = ziGamma(link = "log"),
+                         ziformula = ~ temp_std + ID_main + station,
+                             data = test_a)
+saveRDS(glmmTMB_log_combo, here("data","glmmTMB_log_combo.RDS"))
+
+summary(glmmTMB_log_combo )
+glmmTMB_log_combo_R1<- glmmTMB(mean ~ 0 + (1 + temp_std | ID_main/station),
+                            family = ziGamma(link = "log"),
+                         ziformula = ~ ID_main +station,
+                             data = test_a)
+
+saveRDS(glmmTMB_log_combo_R1, here("data","glmmTMB_log_combo_R1.RDS"))
+
+glmmTMB_log_combo_R1.5<- glmmTMB(mean ~ 0 + (1 + temp_std | ID_main/station),
+                            family = ziGamma(link = "log"),
+                         ziformula = ~ ID_main * station,
+                             data = test_a)
+
+glmmTMB_log_combo_zi1<- glmmTMB(mean ~ 0 + (1 + temp_std | ID_main/station),
+                            family = ziGamma(link = "log"),
+                         ziformula = ~ 1,
+                             data = test_a)
+
+glmmTMB_log_combo_zi1<- glmmTMB(mean ~ 0 + (1 + temp_std | ID_main/station),
+                            family = ziGamma(link = "log"),
+                         ziformula = ~ 1,
+                             data = test_a)
+
+
+
+AICtab(glmmTMB_log_combo,glmmTMB_log_combo_zi1,
+       glmmTMB_log_combo_R1,
+       glmmTMB_log_combo_R1.5)
+
+
+glmmTMB_r2<- glmmTMB(mean ~ 0 + (1 + temp_std | ID_main/station),
+                            family = tweedie,
+                         ziformula = ~ temp_std + ID_main + station,
+                             data = test_a)
+
+glmmTMB_r2.5<- glmmTMB(mean ~ 0 + (1 + temp_std | ID_main/station),
+                            family = tweedie(link = "log"),
+                         ziformula = ~ temp_std + ID_main + station,
+                             data = test_a)
+
+glmmTMB_r3<- glmmTMB(mean ~ 0 + (1 + temp_std | ID_main/station),
+                            family = gaussian,
+                         ziformula = ~ temp_std + ID_main + station,
+                             data = test_a)
+
+glmmTMB_r4<- glmmTMB(mean ~ 0 + (1 + temp_std | ID_main/station),
+                            family = gaussian(link = "log"),
+                     start=c(10,0,0),
+                         ziformula = ~ temp_std + ID_main + station,
+                             data = test_a)
+
+
+```
+
+
+```{r}
+library(DHARMa)
+
+glmmTMB_log_combo_simres <- simulateResiduals(glmmTMB_log_combo)
+plot(glmmTMB_log_combo_simres)
+
+
+ggsave(
+  file = here::here("analysis", "figures", "glmmTMB_log_combo_simres.jpeg"),
+  width = 12,
+  height = 8
+  )
+
+glmmTMB_log_combo_R1_simres <- simulateResiduals(glmmTMB_log_combo_R1)
+plot(glmmTMB_log_combo_R1_simres)
+
+
+ 
+ 
+glmmTMB_r2_simres <- simulateResiduals(glmmTMB_r2)
+plot(glmmTMB_r2_simres)
+
+
+glmmTMB_r2.5_combo_simres <- simulateResiduals(glmmTMB_r2.5)
+plot(glmmTMB_r2.5_combo_simres)
+
+
+glmmTMB_r3_simres <- simulateResiduals(glmmTMB_r3)
+plot(glmmTMB_log_combo_simres)
+
+
+glmmTMB_r4_simres <- simulateResiduals(glmmTMB_r4)
+plot(glmmTMB_log_combo_simres)
+
+
+AICtab(glmmTMB_log_combo,
+       glmmTMB_log_combo_R1,
+       glmmTMB_r2,
+       glmmTMB_r2.5,
+       glmmTMB_r3,
+       glmmTMB_r4)
+```
+
+```{r}
+library(car)
+glmmTMB_log_combo <- readRDS(file= here("data","glmmTMB_log_combo.RDS"))
+
+Anova(glmmTMB_log_combo)
+
+if (requireNamespace("car") && getRversion() >= "3.6.0") {
+Anova(glmmTMB_log_combo) ## default type II
+Anova(glmmTMB_log_combo,type="III")
+}
+
+library(effects)
+effects_ok <- (requireNamespace("effects") && getRversion() >= "3.6.0")
+if (effects_ok) {
+(ae <- allEffects(glmmTMB_log_combo))
+plot(ae)
+}
+
+summary(glmmTMB_log_combo)
+
+
+tidy(glmmTMB_log_combo,conf.int = TRUE)
+if (requireNamespace("broom.mixed") && requireNamespace("dotwhisker")) {
+t1 <- broom.mixed::tidy(glmmTMB_log_combo)
+t1 <- transform(t1,
+term=sprintf("%s.%s", component, term))
+if (packageVersion("dotwhisker")>"0.4.1") {
+dw <- dwplot(t1)
+} else {
+glmmTMB_log_combo$coefficients <- TRUE ## hack!
+dw <- dwplot(glmmTMB_log_combo,by_2sd=FALSE)
+}
+print(dw+geom_vline(xintercept=0,lty=2))
+}
+
+```
+
+
+#Quick and dirty plot
+
+```{r}
+glmmTMB_log_combo <- readRDS(here("data","glmmTMB_log_combo.RDS"))
+
+test_a <- readRDS(file=here("data","calcofi_model_means.RDS"))
+
+glmmTMB_log_combo
+
+newdata0 = newdata = unique(test_a[,c("ID_main","station","temp_std")])
+temp = predict(glmmTMB_log_combo, newdata, se.fit=TRUE, zitype="response")
+temp_cond = predict(glmmTMB_log_combo_zi1, newdata, se.fit=TRUE, zitype="conditional")
+
+newdata$predFE = temp$fit
+newdata$predFE.min = temp$fit-1.98*temp$se.fit
+newdata$predFE.max = temp$fit+1.98*temp$se.fit
+
+
+test_a %>% 
+  left_join(newdata) %>% 
+  ggplot(., aes(x= temp_std))+
+  geom_point(aes(y=mean))+
+  geom_point(aes(y=predFE),colour="red")+
+  geom_pointrange(aes(y=predFE,ymin=predFE.min , ymax=predFE.max), colour="red") +theme_bw()+
+  facet_wrap(ID_main~station, scales="free_y") + scale_y_continuous(trans=scales::pseudo_log_trans(base = 10))
+
+
+
+ggsave(
+  file = here::here("analysis", "figures", "glmmTMB_model_fit.jpeg"),
+  width = 40,
+  height = 40
+  )
+
+tidy(glmmTMB_log_combo_zi1)
+
+glmmTMB_log_combo_zi1$fit$parfull
+fixef(glmmTMB_log_combo)
+glmmTMB_log_combo$fit$parfull
+
+
+glmmTMB_log_combo$sdr
+
+
+
+sims=simulate(glmmTMB_log_combo, seed = 1, nsim = 1000)
+
+sims$sim_1 
+
+
+model_parameters(glmmTMB_log_combo)
+emmeans(glmmTMB_log_combo)
+
+glmmTMB_log_combo
+broom.mixed::tidy(glmmTMB_log_combo)
+
+summary(glmmTMB_log_combo)
+
+glmmTMB_log_combo$frame
+
+ranef(glmmTMB_log_combo) -> rr
+
+as.data.frame(rr)
+
+
+as.data.frame(rr) %>% 
+  filter(., term=="temp_std") -> rr_temp
+
+rr_temp %>% 
+  mutate(., T_statistic= condval/condsd) %>% 
+  filter(., T_statistic  > 1 | T_statistic < -1) %>% 
+   separate(., grp, into=c("station","ID_main"), remove=F, sep=":") %>% 
+  filter(., !is.na(ID_main))-> signficant_taxa
+
+rr_temp %>% 
+  filter(., grpvar !="ID_main") %>% 
+  separate(., grp, into=c("station","ID_main"), remove=F, sep=":") -> rr_t2
+
+rr_temp %>% 
+  filter(., grpvar =="ID_main") %>% 
+  separate(., grp, into=c("ID_main","station"), remove=F, sep=":") %>% 
+  mutate(., station=tidyr::replace_na(station,"Species")) %>% 
+  dplyr::select(component ,grpvar  ,  term  ,    grp    ,   station ,  ID_main ,  condval,  
+,condsd )-> rr_t3
+
+
+rbind(rr_t2,rr_t3)-> back_combo 
+back_combo %>% 
+      mutate(., T_statistic= condval/condsd) %>% 
+  mutate(., station = case_when(
+str_detect(station, "Pt.C") ~ "Pt. Conception",
+str_detect(station, "SaNI") ~ "San Nicholas Island",
+str_detect(station, "SDIn") ~ "San Diego Inshore",
+str_detect(station, "SDOf") ~ "San Diego Offshore",
+TRUE ~"Species"),
+Signficant = case_when(
+T_statistic  > 1 ~ "+",
+T_statistic  < -1 ~ "-",
+TRUE ~ ""
+)) %>% 
+   ggplot(., aes(x = station, y = ID_main, fill = T_statistic)) + geom_tile()   + xlab("Station") + ylab("Species") + scale_fill_viridis_c( option = "plasma", limits=c(-4, 4), breaks=c(-4,-2,-1,-0,1,2,4)) + geom_text(aes(label =
+  Signficant),color="white", size=8)+
+  theme_bw() +
+  theme(axis.text.y=element_text(size=14),
+axis.text.x = element_text(
+size = 14,
+angle = 30,
+hjust = 1
+),
+panel.background = element_rect(fill = 'white', colour = 'white'),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank(),
+axis.title.x = element_blank(),
+axis.title.y = element_text(size = 18, angle = 90, face = "bold"),
+strip.background = element_rect(fill = 'white'),
+strip.text.x = element_text(size = 15),
+legend.text = element_text(size = 10),
+legend.title = element_text(size = 15),
+axis.line = element_line(colour = 'black')
+) + guides(fill=guide_legend(title="T Statistic")) 
+
+
+
+
+ggsave(
+  file = here::here("analysis", "figures", "glmmTMB_model_fit_RE_values.jpeg"),
+  width = 12,
+  height = 12
+  )
+
+
+```
+
+
+```{R}
+confint(glmmTMB_log_combo) %>% 
+  as_tibble(rownames = "component") %>% 
+  ggplot(., aes(y=component)) +
+  geom_point(aes(x=Estimate)) +
+  geom_errorbarh(aes(xmax = `97.5 %`, xmin = `2.5 %`, height = 0)) +
+  geom_vline(xintercept = 0, linetype="dashed", 
+                color = "red", size=1.5)
+
+
+
+ggsave(
+  file = here::here("analysis", "figures", "glmmTMB_model_fit_confidence_intervals_parms_values.jpeg"),
+  width = 16,
+  height = 20
+  )
+```
+
+# Simulation
+```{r}
+sims=simulate(glmmTMB_log_combo, seed = 1, nsim = 1000)
+
+
+simdatlist=lapply(sims, function(count){
+cbind(count, test_a[,c('station', 'ID_main', 'temp_std')])
+})
+
+
+```
