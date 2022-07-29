@@ -169,7 +169,7 @@ ggsave(
   height = 8
 )
 
-# Supplemental Figure 5. Co-detection of eDNA and Microscopy Data
+# Supplemental Figure 2. Co-detection of eDNA and Microscopy Data
 
 
 Output$D_mifish %>% 
@@ -218,7 +218,7 @@ b_heat_plot
 
 ggsave(
   b_heat_plot,
-  file = here::here("analysis", "figures", "S5_fig_codetection_of_taxa.png"),
+  file = here::here("analysis", "figures", "S2_fig_codetection_of_taxa.png"),
   width = 18,
   height = 18
 )
