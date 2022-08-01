@@ -1055,6 +1055,11 @@ scale_y_continuous(
 
 biomass_conc
 
+
+b_long_all_edit_site_conception %>% 
+  group_by(ID_main) %>% 
+  dplyr::summarise(max(mean),min(mean), mean(mean), sd(mean))
+
 ```
 
 ## Anchovy Sardine San Nicholas Island
@@ -1109,6 +1114,10 @@ scale_y_continuous(
 biomass_sni
 
 
+
+b_long_all_edit_site_sni %>% 
+  group_by(ID_main) %>% 
+  dplyr::summarise(max(mean),min(mean), mean(mean), sd(mean))
 ```
 
 ## Anchovy Sardine San Diego Inshore
@@ -1167,6 +1176,9 @@ scale_y_continuous(
 biomass_sdi
 
 
+b_long_all_edit_site_sdi %>% 
+  group_by(ID_main) %>% 
+  dplyr::summarise(max(mean),min(mean), mean(mean), sd(mean))
 
 ```
 
@@ -1219,6 +1231,34 @@ scale_y_continuous(
          legend.box = "vertical") + facet_wrap(station~., ncol=1) 
 
 biomass_sdo
+
+
+
+b_long_all_edit_site_sdo %>% 
+  group_by(ID_main) %>% 
+  dplyr::summarise(max(mean),min(mean), mean(mean), sd(mean))
+
+b_long_all_edit_site_sdo %>% 
+  filter(., Year >2004 & 2009 > Year) %>% 
+  group_by(ID_main) %>% 
+  dplyr::summarise(max(mean),min(mean), mean(mean), sd(mean))
+
+b_long_all_edit_site_sni %>% 
+  filter(., Year >2016) %>% 
+  group_by(ID_main) %>% 
+  dplyr::summarise(max(mean),min(mean), mean(mean), sd(mean))
+
+
+
+b_long_all_edit_site %>% 
+  mutate(., MHW = if_else(Year > 2013, "psotMHW","preMHW")) %>% 
+  group_by(MHW, ID_main) %>% 
+    dplyr::summarise(max(mean),min(mean), mean(mean), sd(mean))
+
+b_long_all_edit_site %>% 
+filter(., Year >2009 & 2014 > Year) %>% 
+  group_by(ID_main) %>% 
+    dplyr::summarise(max(mean),min(mean), mean(mean), sd(mean))
 
 ```
 # Figure 3
