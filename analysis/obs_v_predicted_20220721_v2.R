@@ -218,7 +218,7 @@ b_heat_plot
 
 ggsave(
   b_heat_plot,
-  file = here::here("analysis", "figures", "S2_fig_codetection_of_taxa.png"),
+  file = here::here("analysis", "figures", "Fig_1_codetection_of_taxa.png"),
   width = 18,
   height = 18
 )

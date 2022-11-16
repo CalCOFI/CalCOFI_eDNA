@@ -12,7 +12,6 @@ library(tidyverse)
 library(vegan)
 library(proxy)
 library(reshape2)
-library(microDecon)
 library(stringr)
 library(knitr)
 library(here)
@@ -372,4 +371,61 @@ dplyr::summarise(max(eIDX)) %>%
 filter(., `max(eIDX)` < 1)
 ```
 
+#ASV Variant exploration
+```{r}
+#Reupload Data
 
+
+ASV.nested$Step5.tibble[[1]] %>%
+mutate(miseq = ASV.nested$Miseq_run[[1]]) %>%
+filter(.,!str_detect(sample, "Exp_")) %>%
+unite(miseq, sample, col = "Sample") %>%
+left_join(Hash.key.updated, by = "seq_number") %>%
+dplyr::group_by(sum.taxonomy, Sample) %>%
+dplyr::summarise(nReads = sum(nReads))  %>% 
+ungroup() %>% 
+  mutate(., tot_reads=sum(nReads),
+         prop_reads = nReads/tot_reads) %>% 
+  filter(., str_detect(sum.taxonomy,"Stenobrachius")) -> steno_data
+
+steno_data %>% 
+  group_by(sum.taxonomy) %>% 
+  dplyr::summarise(max(nReads), sum(nReads),mean(nReads),sd(nReads), max(prop_reads), mean(prop_reads), n_distinct(Sample))
+
+steno_data %>% 
+  mutate(., Species = case_when(str_detect(sum.taxonomy,"leucopsarus")~"Stenobrachius leucopsarus",
+           str_detect(sum.taxonomy,"nannochir")~"Stenobrachius leucopsarus Cold Variant",
+            TRUE ~"Genus_level" ) ) %>%
+  dplyr::select(-sum.taxonomy,-tot_reads,-nReads) %>% 
+  pivot_wider(names_from = Species,
+    names_glue = "{Species}_{.value}",
+    values_from = prop_reads, values_fill = 0) -> steno_plot
+
+steno_plot %>% 
+  ggplot(., aes(x=`Stenobrachius leucopsarus_prop_reads`,y=`Stenobrachius leucopsarus Cold Variant_prop_reads`)) +
+  geom_point() +
+  geom_point(alpha = 0.5) +
+  geom_abline(intercept = 0,slope=1, linetype=2, color="tomato", size=2) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 14),
+    panel.background = element_rect(fill = 'white', colour = 'white'),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(size = 14, angle = 0),
+    axis.title.x = element_text(size = 18, face = "bold"),
+    axis.title.y = element_text(size = 18, face = "bold"),
+    strip.background = element_rect(fill = 'white'),
+    strip.text.x = element_text(size = 15),
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 15),
+    axis.line = element_line(colour = 'black')
+  )  
+
+ggsave(
+  file = here::here("analysis", "figures", "Figure_S1_variant_propotions.png"),
+  width = 12,
+  height = 8
+)
+
+```

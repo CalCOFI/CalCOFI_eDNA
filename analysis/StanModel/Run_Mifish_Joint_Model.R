@@ -55,8 +55,8 @@ dat.mifish <-
   dat.mifish %>% group_by(ID_mifish, Sample, tech_rep, station_id, log_r_mifish) %>% summarise(nReads = sum(nReads))
 
 drop.these.mifish <-
-  dat.mifish %>% group_by(ID_mifish) %>% tally(nReads > 0) %>% filter(n <
-                                                                        11) %>% pull(ID_mifish) #Note change here to filter out rarely occurring species
+  dat.mifish %>% ungroup() %>% group_by(ID_mifish) %>% tally(nReads > 0) %>% filter(n <
+                                                                        10) %>% pull(ID_mifish) #Note change here to filter out rarely occurring species
 dat.mifish <-
   dat.mifish %>%  filter (!ID_mifish %in% drop.these.mifish)
 
@@ -65,10 +65,10 @@ dat.mifish.init <- dat.mifish
 
 #data from ichthyoplankton counts
 dat.count <- readRDS(here("data", "microscopy_tech_nReads.RDS")) %>%
-  filter(!ID_microscopy %in% c("MISSING", "", "Disintegrated fish larvae")) %>%
+  filter(!ID_count %in% c("MISSING", "", "Disintegrated fish larvae")) %>%
   filter(station_id %in% unique(dat.mifish$station_id)) %>%
   group_by(
-    ID_microscopy,
+    ID_count,
     station_id,
     standard.haul.factor,
     volume.filtered,
@@ -77,11 +77,11 @@ dat.count <- readRDS(here("data", "microscopy_tech_nReads.RDS")) %>%
   dplyr::summarise(larval_counts = sum(larval_counts))
 
 #synonymize all Sebastes in counts
-dat.count$ID_microscopy[grepl("Sebastes", dat.count$ID_microscopy)] <-
+dat.count$ID_count[grepl("Sebastes", dat.count$ID_count)] <-
   "Sebastes"
 dat.count <-
   dat.count %>% group_by(
-    ID_microscopy,
+    ID_count,
     station_id,
     standard.haul.factor,
     volume.filtered,
@@ -90,17 +90,19 @@ dat.count <-
 
 #require data from both of the datasets at a given station
 keepstations <-
-  dat.count$station_id %>% intersect(dat.mifish$station_id)
+dat.count$station_id %>% intersect(dat.mifish$station_id)
 dat.count <- dat.count %>% filter(station_id %in% keepstations)
 dat.mifish <- dat.mifish %>% filter(station_id %in% keepstations)
 
 #restrict to taxa that aren't incredibly rare
 common_count <- dat.count %>%
-  group_by(ID_microscopy) %>%
+  group_by(ID_count) %>%
   dplyr::summarise(tot = sum(larval_counts)) %>%
   arrange(desc(tot)) %>%
   top_n(25) %>%
-  pull(ID_microscopy)
+  pull(ID_count)
+
+common_count <- append(common_count, c("Diaphus theta","Microstomus pacificus"))
 
 #this is a very high percentage of all counts
 # dat.count %>%  filter (ID_microscopy %in% common_count) %>% ungroup() %>% dplyr::summarize(sum(larval_counts)) /
@@ -108,7 +110,7 @@ common_count <- dat.count %>%
 
 #make a new object dat.count.init that has been filtered.  Do not overwrite dat.count
 dat.count.init <- dat.count %>%
-  filter(ID_microscopy %in% common_count)  #take just common species, for now
+  filter(ID_count %in% common_count)  #take just common species, for now
 
 # pull appropriate taxonomic annotation from microscopy counts
 species_mapping <-
@@ -132,7 +134,6 @@ species_mapping <-
 # Re-filter dat.count to include only the species found in species_mapping, as a safety check
 dat.count <- dat.count %>%
   ungroup() %>%
-  dplyr::rename(ID_count = ID_microscopy) %>%
   dplyr::rename(Abund = larval_counts) %>%
   filter(ID_count %in% species_mapping$ID_count)
 
@@ -443,6 +444,7 @@ stanMod = stan(
 )
 
 
+
 # get_adaptation_info(stanMod)
 pars <- rstan::extract(stanMod, permuted = TRUE)
 samp_params <- get_sampler_params(stanMod)
@@ -633,3 +635,4 @@ save(Output, file = here("data", paste0(
   format(Sys.time(), "%Y%m%d_%H%M"),
   ".RData"
 )))
+
