@@ -405,6 +405,8 @@ steno_plot %>%
   ggplot(., aes(x=`Stenobrachius leucopsarus_prop_reads`,y=`Stenobrachius leucopsarus Cold Variant_prop_reads`)) +
   geom_point() +
   geom_point(alpha = 0.5) +
+  xlab("Stenobrachius leucopsarus Proportional Read Abundance") +
+   ylab("Stenobrachius leucopsarus Cold Variant Proportional Read Abundance")+
   geom_abline(intercept = 0,slope=1, linetype=2, color="tomato", size=2) +
   theme_bw() +
   theme(
@@ -425,7 +427,9 @@ steno_plot %>%
 ggsave(
   file = here::here("analysis", "figures", "Figure_S1_variant_propotions.png"),
   width = 12,
-  height = 8
+  height = 12
 )
 
 ```
+
+
