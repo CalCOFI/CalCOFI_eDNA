@@ -35,9 +35,7 @@ Included on this page is
   /anacapa_output_20210507
 
     1. *combo_q30* *Anacapa Toolkit* Output of MiFish 12S data using the *CRUX* Global Reference database from [Gold et al. 2021](https://onlinelibrary.wiley.com/doi/epdf/10.1111/1755-0998.13450       
-    2. *fishcard_q30* *Anacapa Toolkit* Output of MiFish 12S data using the *CRUX* Local Reference database from Gold et al. 2021. [See GitHub](https://github.com/zjgold/FishCARD & [See Dryad](https://doi.org/10.5068/D1H963)
-
-      **Note** *ASV raw files needed for decon are not uploaded due to size*
+    2. *fishcard_q30* *Anacapa Toolkit* Output of MiFish 12S data using the *CRUX* Local Reference database from Gold et al. 2021. 
 
   /CalCOFI_Database_194903-201907_csv_30Apr2020
 
@@ -54,7 +52,7 @@ Included on this page is
     5. Other files are various metadata and intermediate outputs needed to link data to each other.
 
 
-**Raw sequence inputs and large model outputs are available on [Dryad](https://doi.org/10.5068/D1267D)**
+**Raw sequence inputs and large model outputs are available on [Dryad](https://doi.org/10.5068/D1267D). Reference databases from Gold et al. 2021 are available [GitHub](https://github.com/zjgold/FishCARD) & [Dryad](https://doi.org/10.5068/D1H963)**
 
 ## Dependencies
 
