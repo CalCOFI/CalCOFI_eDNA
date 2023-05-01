@@ -1,4 +1,4 @@
-# Message in a Bottle: Archived DNA Reveals Marine Heatwave-Associated Shifts in Fish Assemblages
+# Archived DNA Reveals Marine Heatwave-Associated Shifts in Fish Assemblages
 
 Zachary Gold<sup>1 , 2</sup> , Ryan P. Kelly<sup>3</sup>, Andrew Olaf Shelton<sup>2</sup>, Andrew Thompson<sup>4</sup>, Kelly D. Goodwin<sup>5</sup>, Ramon Gallego<sup>2</sup>, Kim Parsons<sup>2</sup>, Luke R. Thompson<sup>5 , 6</sup>,  Dovi Kacev<sup>7</sup>, Paul H. Barber<sup>8</sup>
 
@@ -35,7 +35,7 @@ Included on this page is
   /anacapa_output_20210507
 
     1. *combo_q30* *Anacapa Toolkit* Output of MiFish 12S data using the *CRUX* Global Reference database from [Gold et al. 2021](https://onlinelibrary.wiley.com/doi/epdf/10.1111/1755-0998.13450       
-    2. *fishcard_q30* *Anacapa Toolkit* Output of MiFish 12S data using the *CRUX* Local Reference database from Gold et al. 2021. [See GitHub](https://github.com/zjgold/FishCARD & [See Dryad](https://doi.org/10.5068/D1H963
+    2. *fishcard_q30* *Anacapa Toolkit* Output of MiFish 12S data using the *CRUX* Local Reference database from Gold et al. 2021. [See GitHub](https://github.com/zjgold/FishCARD & [See Dryad](https://doi.org/10.5068/D1H963)
 
       **Note** *ASV raw files needed for decon are not uploaded due to size*
 
@@ -54,7 +54,7 @@ Included on this page is
     5. Other files are various metadata and intermediate outputs needed to link data to each other.
 
 
-**Raw sequence inputs, reference databases, and Anacapa scripts  will eventually be  available on Dryad**
+**Raw sequence inputs and large model outputs are available on [Dryad](https://doi.org/10.5068/D1267D)**
 
 ## Dependencies
 
