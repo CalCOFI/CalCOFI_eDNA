@@ -153,3 +153,5 @@ Generates figures for the manuscript and has the main analyses conducted.
 
 ### b. Run Suppl_analyses_RPK_20210907.Rmd
 Generates additional supplemental tables confirming no degradation over time.
+
+Tags: noaa-omics-study , noaa-omics-data
